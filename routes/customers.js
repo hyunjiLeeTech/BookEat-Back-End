@@ -6,6 +6,7 @@ router.route("/").get((req, res) => {
   Customer.find()
     .then((customers) => res.json(customers))
     .catch((err) => res.status(400).json("Error: " + err));
+    //check
 });
 
 // post request (/customers/add)
