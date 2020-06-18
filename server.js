@@ -25,12 +25,14 @@ const restaurantOwnerRouter = require("./routes/restaurnatOwners");
 const cuisineStyleRouter = require("./routes/cuisineStyle");
 const priceRangeRouter = require("./routes/priceRange");
 const categoryRouter = require("./routes/category");
+const accountRouter = require("./routes/account");
 
 app.use("/customers", customersRouter);
 app.use("/restaurantOwners", restaurantOwnerRouter);
 app.use("/cuisineStyle", cuisineStyleRouter);
 app.use("/category", categoryRouter);
 app.use("/priceRange", priceRangeRouter);
+app.use("/account", accountRouter);
 
 app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);

@@ -1,9 +1,11 @@
 const router = require("express").Router();
 let Customer = require("../models/customer.model");
+let Account = require("../models/account.model");
 
 //get request (/customers)
 router.route("/").get((req, res) => {
   Customer.find()
+    .populate("account")
     .then((customers) => res.json(customers))
     .catch((err) => res.status(400).json("Error: " + err));
 });
@@ -15,19 +17,33 @@ router.route("/add").post((req, res) => {
   const email = req.body.email;
   const phoneNumber = req.body.phonenumber;
   const password = req.body.password;
+  const userTypeId = req.body.userTypeId;
+  const noShowCount = req.body.noShowCount;
 
-  const newCustomer = new Customer({
-    firstName,
-    lastName,
+  const newAccount = new Account({
     email,
-    phoneNumber,
     password,
+    userTypeId,
   });
 
-  newCustomer
+  newAccount
     .save()
-    .then(() => res.json("Customer Added"))
-    .catch((err) => res.status(400).json("Rrror: " + err));
+    .then((account) => {
+      res.json("Account Added");
+
+      const accountId = account._id.toString();
+
+      const newCustomer = new Customer({
+        firstName,
+        lastName,
+        phoneNumber,
+        noShowCount,
+        accountId,
+      });
+
+      newCustomer.save();
+    })
+    .catch((err) => res.status(400).json("Error: " + err));
 });
 
 router.route("/:id").get((req, res) => {
@@ -50,6 +66,7 @@ router.route("/update/:id").post((req, res) => {
       customer.email = req.body.email;
       customer.phoneNumber = req.body.phonenumber;
       customer.password = req.body.password;
+      customer.noShowCount = req.body.noShowCount;
 
       customer
         .save()
