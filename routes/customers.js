@@ -26,19 +26,25 @@ router.route("/add").post((req, res) => {
     userTypeId,
   });
 
+  newCustomer = new Customer({
+    lastName,
+    firstName,
+    noShowCount,
+  });
+
   newAccount
     .save()
     .then((account) => {
       res.json("Account Added");
 
-      const accountId = account._id.toString();
+      const accountId = account._id;
 
       const newCustomer = new Customer({
         firstName,
         lastName,
         phoneNumber,
         noShowCount,
-        accountId,
+        account: accountId,
       });
 
       newCustomer.save();
