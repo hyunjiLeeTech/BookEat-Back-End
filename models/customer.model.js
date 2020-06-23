@@ -7,14 +7,14 @@ const customerSchema = new Schema(
     account: { type: Schema.Types.ObjectId, ref: "Account" },
     firstName: {
       type: String,
-      required: false,
+      required: true,
       unique: false,
       maxlength: 32,
     },
     lastName: { type: String, required: false, maxLength: 32 },
     phoneNumber: {
       type: Number,
-      required: false,
+      required: true,
       minlength: 10,
       maxlength: 10,
     },
