@@ -4,7 +4,8 @@ const Schema = mongoose.Schema;
 
 const restaurantOwnerSchema = new Schema(
   {
-    firstName: { type: String, required: true },
+    phoneNumber: { type: Number },
+    account: { type: Schema.Types.ObjectId, ref: "Account" },
   },
   {
     timestamps: true,
