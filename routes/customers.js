@@ -1,48 +1,36 @@
 const router = require("express").Router();
 let Customer = require("../models/customer.model");
-const e = require("express");
+let Account = require("../models/account.model");
 
-function isEmpty(obj) {
-  for(var key in obj) {
-      if(obj.hasOwnProperty(key))
-          return false;
-  }
-  return true;
-}
+//get request (/customers)
+router.route("/").get((req, res) => {
+  Customer.find()
+    .populate("account")
+    .then((customers) => res.json(customers))
+    .catch((err) => res.status(400).json("Error: " + err));
+    console.log("test");
+});
 
-let findCustomerByEmailAsyc = async function(email){
-  return await Customer.find({email: email});
-}
+// post request (/customers/add)
+router.route("/add").post((req, res) => {
+  const firstName = req.body.firstname;
+  const lastName = req.body.lastname;
+  const email = req.body.email;
+  const phoneNumber = req.body.phonenumber;
+  const password = req.body.password;
+  const userTypeId = req.body.userTypeId;
+  const noShowCount = 0;
 
-let findCustomerByPhoneNumberAsync = async function(phonenumber){
-  return await Customer.find({phoneNumber: phonenumber});
-}
-
-let addCustomerAsync = async function(obj){
-  const regExpEmail = RegExp(
-    /^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[A-Za-z]+$/
-  );
-  
-  const regExpPhone = RegExp(
-    /^\(?([0-9]{3})\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$/
-  );
-  
-  const regExpPassword = RegExp(
-    /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{6,32}$/
-  );
-  const firstName = obj.firstName;
-  const lastName = obj.lastName;
-  const email = obj.email;
-  const phoneNumber = obj.phoneNumber;
-  const password = obj.password;
-
-
-  const newCustomer = new Customer({
-    firstName,
-    lastName,
+  const newAccount = new Account({
     email,
-    phoneNumber,
     password,
+    userTypeId,
+  });
+
+  newCustomer = new Customer({
+    lastName,
+    firstName,
+    noShowCount,
   });
   let message = "";
   if((await findCustomerByEmailAsyc(email)).length > 0 ){
@@ -72,34 +60,25 @@ let addCustomerAsync = async function(obj){
   if(!regExpPassword.test(password)){
     message = "Password does not satisfy the password policy"
     throw message;
-
   }
-  if(!regExpPhone.test(phoneNumber)){
-    message = "Incorrect phone number"
-    throw message;
+  newAccount
+    .save()
+    .then((account) => {
+      res.json("Account Added");
 
-  }
-  return await newCustomer.save()
-}
+      const accountId = account._id;
 
+      const newCustomer = new Customer({
+        firstName,
+        lastName,
+        phoneNumber,
+        noShowCount,
+        account: accountId,
+      });
 
-
-
-
-//get request (/customers)
-router.route("/").get((req, res) => {
-  Customer.find()
-    .then((customers) => res.json(customers))
+      newCustomer.save();
+    })
     .catch((err) => res.status(400).json("Error: " + err));
-    console.log("test");
-});
-
-// post request (/customers/add)
-router.route("/add").post((req, res) => {
-  //console.log(req.body)
-  addCustomerAsync({firstName: req.body.firstname, lastName: req.body.lastname, email: req.body.email, phoneNumber: req.body.phonenumber, password: req.body.password})
-  .then(()=>res.json({errcode: 0, errmsg: "success"}))
-  .catch((err) => res.json({errcode: 1, errmsg: err}))
 });
 
 router.route("/:id").get((req, res) => {
@@ -122,6 +101,7 @@ router.route("/update/:id").post((req, res) => {
       customer.email = req.body.email;
       customer.phoneNumber = req.body.phonenumber;
       customer.password = req.body.password;
+      customer.noShowCount = req.body.noShowCount;
 
       customer
         .save()

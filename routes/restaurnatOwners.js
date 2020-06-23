@@ -1,19 +1,116 @@
 const router = require("express").Router();
 let RestaurantOwner = require("../models/restaurantOwner.model");
-const RestaurnatOwner = require("../models/restaurantOwner.model");
+let Account = require("../models/account.model");
+let Address = require("../models/address.model");
+const Restaurant = require("../models/restaurnat.model");
+const Customer = require("../models/customer.model");
 
+//get request (/customers)
 router.route("/").get((req, res) => {
   RestaurantOwner.find()
-    .then((restaurantOwners) => res.json(restaurantOwners))
+    .populate("account")
+    .then((restaurantOwner) => res.json(restaurantOwner))
     .catch((err) => res.status(400).json("Error: " + err));
 });
 
+// post request (/customers/add)
 router.route("/add").post((req, res) => {
-  const firstName = req.body.firstName;
+  //account
+  const userTypeId = req.body.userTypeId;
+  const password = req.body.password;
+  const email = req.body.email;
 
-  const newRestaurantOwner = new RestaurnatOwner({
-    firstName,
+  //restaurantOwner
+  // this is for restaurant
+  const phoneNumber = req.body.phoneNumber;
+
+  //address
+  const province = req.body.province;
+  const streetNumber = req.body.streetNumber;
+  const streetName = req.body.streetName;
+  const postalCode = req.body.postalCode;
+  const city = req.body.city;
+
+  //restaurant
+  const resName = req.body.resName;
+  const businessNum = req.body.businessNum;
+
+  const newAccount = new Account({
+    email,
+    password,
+    userTypeId,
   });
+
+  const newAddress = new Address({
+    province,
+    streetName,
+    streetNumber,
+    postalCode,
+    city,
+  });
+
+  newAccount
+    .save()
+    .then((account) => {
+      res.json("Account Added");
+
+      const accountId = account._id;
+      let resOwnerId, adrId;
+
+      const newRestaurantOwner = new RestaurantOwner({
+        phoneNumber,
+        account: accountId,
+      });
+
+      newRestaurantOwner.save().then((resOwner) => {
+        resOwnerId = resOwner._id;
+
+        newAddress.save().then((address) => {
+          adrId = address._id;
+          const newRestaurant = new Restaurant({
+            resName,
+            businessNum,
+            restaurantOwnerId: resOwnerId,
+            addressId: adrId,
+          });
+
+          newRestaurant.save();
+        });
+      });
+    })
+    .catch((err) => res.status(400).json("Error: " + err));
 });
+
+/*newAccount
+    .save()
+    .then((account) => {
+      res.json("Account Added");
+
+      let resOwnerId, addressId;
+
+      const newRestaurantOwner = new RestaurantOwner({
+        phoneNumber,
+        account: account._id,
+      });
+
+      newRestaurantOwner.save().then((resOwner) => {
+        resOwnerId = resOwner._id;
+      });
+
+      newAddress.save().then((address) => {
+        addressId = address._id;
+      });
+
+      const newRestaurant = new Restaurant({
+        resName,
+        businessNum,
+        restaurantOwnerId: resOwnerId,
+        addressId: addressId,
+      });
+
+      newRestaurant.save();
+    })
+    .catch((err) => res.status(400).json("Error: " + err));
+  });*/
 
 module.exports = router;
