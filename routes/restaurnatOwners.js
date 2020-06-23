@@ -16,7 +16,7 @@ router.route("/").get((req, res) => {
 // post request (/customers/add)
 router.route("/add").post((req, res) => {
   //account
-  const userTypeId = req.body.userTypeId;
+  const userTypeId = 2;
   const password = req.body.password;
   const email = req.body.email;
 

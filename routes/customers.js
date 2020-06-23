@@ -17,7 +17,7 @@ router.route("/add").post((req, res) => {
   const email = req.body.email;
   const phoneNumber = req.body.phonenumber;
   const password = req.body.password;
-  const userTypeId = req.body.userTypeId;
+  const userTypeId = 1;
   const noShowCount = 0;
 
   const newAccount = new Account({
