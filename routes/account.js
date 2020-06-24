@@ -14,7 +14,7 @@ router.route("/add").post((req, res) => {
   const userTypeId = req.body.userTypeId;
 
   const newAccount = new Account({
-    email,
+    _id: email,
     password,
     userTypeId,
   });
@@ -43,7 +43,6 @@ router.route("/update/:id").post((req, res) => {
   Account.findById(req.params.id)
     .then((account) => {
       account.userTypeId = req.body.userTypeId;
-      account.email = req.body.email;
       account.password = req.body.password;
 
       account

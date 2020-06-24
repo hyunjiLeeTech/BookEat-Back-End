@@ -7,7 +7,7 @@ const restaurantSchema = new Schema(
     resName: { type: String, required: true },
     businessNum: { type: String, required: true },
     restaurantDescription: { type: String },
-    phonenumber: { type: Number, required: false },
+    phoneNumber: { type: Number, required: false },
     email: { type: String, required: false },
     monOpenTime: { type: Date, required: false },
     tueOpenTime: { type: Date, required: false },
