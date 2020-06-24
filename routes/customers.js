@@ -2,24 +2,30 @@ const router = require("express").Router();
 let Customer = require("../models/customer.model");
 let Account = require("../models/account.model");
 
-//get request (/customers)
-router.route("/").get((req, res) => {
-  Customer.find()
-    .populate("account")
-    .then((customers) => res.json(customers))
-    .catch((err) => res.status(400).json("Error: " + err));
-    console.log("test");
-});
 
-// post request (/customers/add)
-router.route("/add").post((req, res) => {
-  const firstName = req.body.firstname;
-  const lastName = req.body.lastname;
-  const email = req.body.email;
-  const phoneNumber = req.body.phonenumber;
-  const password = req.body.password;
-  const userTypeId = req.body.userTypeId;
-  const noShowCount = 0;
+let findAccountByEmailAsyc = async function(email){
+  return await Account.find({email: email});
+}
+
+let findCustomerByPhoneNumberAsync = async function(phonenumber){
+  return await Customer.find({phoneNumber: phonenumber});
+}
+
+let addCustomerAsync = async function(obj){
+  const regExpEmail = RegExp(
+    /^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[A-Za-z]+$/
+  );
+  
+  const regExpPhone = RegExp(
+    /^\(?([0-9]{3})\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$/
+  );
+  
+  const firstName = obj.firstName;
+  const lastName = obj.lastName;
+  const email = obj.email;
+  const phoneNumber = obj.phoneNumber;
+  const password = obj.password;
+  const userTypeId = obj.userTypeId;
 
   const newAccount = new Account({
     email,
@@ -27,18 +33,10 @@ router.route("/add").post((req, res) => {
     userTypeId,
   });
 
-  newCustomer = new Customer({
-    lastName,
-    firstName,
-    noShowCount,
-  });
+
   let message = "";
-  if((await findCustomerByEmailAsyc(email)).length > 0 ){
+  if((await findAccountByEmailAsyc(email)).length > 0 ){
     message = "This email is already registered"
-    throw message;
-  }
-  if((await findCustomerByPhoneNumberAsync(phoneNumber)).length > 0){
-    message = "This phonenumber is already registered"
     throw message;
   }
 
@@ -57,28 +55,61 @@ router.route("/add").post((req, res) => {
     throw message;
 
   }
-  if(!regExpPassword.test(password)){
-    message = "Password does not satisfy the password policy"
+
+  if(!regExpPhone.test(phoneNumber)){
+    message = "Incorrect phone number"
     throw message;
+
   }
-  newAccount
-    .save()
-    .then((account) => {
-      res.json("Account Added");
+  let account = await newAccount.save();
+  const newCustomer = new Customer({
+    firstName,
+    lastName,
+    phoneNumber,
+    noShowCount: 0,
+    account: account._id,
+  });
 
-      const accountId = account._id;
+  return await newCustomer.save();
+}
 
-      const newCustomer = new Customer({
-        firstName,
-        lastName,
-        phoneNumber,
-        noShowCount,
-        account: accountId,
-      });
 
-      newCustomer.save();
-    })
+
+
+
+
+
+
+//get request (/customers)
+router.route("/").get((req, res) => {
+  Customer.find()
+    .populate("account")
+    .then((customers) => res.json(customers))
     .catch((err) => res.status(400).json("Error: " + err));
+    console.log("test");
+});
+
+// post request (/customers/add)
+router.route("/add").post((req, res) => {
+  const firstName = req.body.firstname;
+  const lastName = req.body.lastname;
+  const email = req.body.email;
+  const phoneNumber = req.body.phonenumber;
+  const password = req.body.password;
+  const userTypeId = 1; //customer
+  var obj = {
+    firstName,
+    lastName,
+    email,
+    phoneNumber,
+    password,
+    userTypeId,
+  }
+  addCustomerAsync(obj).then(()=>{
+    res.json({errcode: 0, errmsg: "success"})
+  }).catch(err =>{
+    res.json({errcode: 1, errmsg: err});
+  })
 });
 
 router.route("/:id").get((req, res) => {
