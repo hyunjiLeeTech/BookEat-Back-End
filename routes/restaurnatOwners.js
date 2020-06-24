@@ -16,13 +16,12 @@ router.route("/").get((req, res) => {
 // post request (/customers/add)
 router.route("/add").post((req, res) => {
   //account
-  const userTypeId = req.body.userTypeId;
+  const userTypeId = 2;
   const password = req.body.password;
   const email = req.body.email;
 
   //restaurantOwner
   // this is for restaurant
-  const phoneNumber = req.body.phoneNumber;
 
   //address
   const province = req.body.province;
@@ -34,6 +33,7 @@ router.route("/add").post((req, res) => {
   //restaurant
   const resName = req.body.resName;
   const businessNum = req.body.businessNum;
+  const phoneNumber = req.body.phoneNumber;
 
   const newAccount = new Account({
     email,
@@ -58,7 +58,6 @@ router.route("/add").post((req, res) => {
       let resOwnerId, adrId;
 
       const newRestaurantOwner = new RestaurantOwner({
-        phoneNumber,
         account: accountId,
       });
 
@@ -69,6 +68,7 @@ router.route("/add").post((req, res) => {
           adrId = address._id;
           const newRestaurant = new Restaurant({
             resName,
+            phoneNumber,
             businessNum,
             restaurantOwnerId: resOwnerId,
             addressId: adrId,
@@ -80,37 +80,5 @@ router.route("/add").post((req, res) => {
     })
     .catch((err) => res.status(400).json("Error: " + err));
 });
-
-/*newAccount
-    .save()
-    .then((account) => {
-      res.json("Account Added");
-
-      let resOwnerId, addressId;
-
-      const newRestaurantOwner = new RestaurantOwner({
-        phoneNumber,
-        account: account._id,
-      });
-
-      newRestaurantOwner.save().then((resOwner) => {
-        resOwnerId = resOwner._id;
-      });
-
-      newAddress.save().then((address) => {
-        addressId = address._id;
-      });
-
-      const newRestaurant = new Restaurant({
-        resName,
-        businessNum,
-        restaurantOwnerId: resOwnerId,
-        addressId: addressId,
-      });
-
-      newRestaurant.save();
-    })
-    .catch((err) => res.status(400).json("Error: " + err));
-  });*/
 
 module.exports = router;
