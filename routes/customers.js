@@ -39,6 +39,10 @@ let addCustomerAsync = async function(obj){
     message = "This email is already registered"
     throw message;
   }
+  if((await findCustomerByPhoneNumberAsync(email)).length > 0 ){
+    message = "This phone number is already registered"
+    throw message;
+  }
 
   if(firstName.length < 1){
     message = "First name should have at least one char"
@@ -79,9 +83,11 @@ let addCustomerAsync = async function(obj){
 
 
 
-
+//
 //get request (/customers)
 router.route("/").get((req, res) => {
+  console.log("Accessing /customers/, user:")
+  console.log(req.user)
   Customer.find()
     .populate("account")
     .then((customers) => res.json(customers))
