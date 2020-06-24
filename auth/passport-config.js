@@ -87,6 +87,7 @@ passport.deserializeUser(function (email, done) {
     });
 });
 
+//Have not finished, Do not use 
 passport.authenticateMiddleware = function authenticationMiddleware() {
     return function (req, res, next) {
         if (req.isAuthenticated()) {
@@ -97,6 +98,7 @@ passport.authenticateMiddleware = function authenticationMiddleware() {
     }
 };
 
+//Have not finished, do not use
 passport.authenticateMiddlewareJwt = function authenticationMiddleware() {
     return function (req, res, next) {
         if (req.isAuthenticated()) {
