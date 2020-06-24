@@ -2,12 +2,12 @@ const express = require("express");
 
 const cors = require("cors");
 const mongoose = require("mongoose");
-const secret = require("./auth/secret")
+const secret = require("./auth/secret");
 require("dotenv").config();
 
-const expressSession = require('express-session');
-const passport = require('./auth/passport-config');
-const jwt = require('jsonwebtoken')
+const expressSession = require("express-session");
+const passport = require("./auth/passport-config");
+const jwt = require("jsonwebtoken");
 const app = express();
 const port = process.env.PORT || 5000;
 let Customer = require("./models/customer.model");
@@ -15,14 +15,15 @@ let Account = require("./models/account.model");
 
 app.use(cors());
 app.use(express.json());
-app.use(expressSession({
-  secret: 'BookEatAwesome',
-  resave: false,
-  saveUninitialized: false,
-}))
+app.use(
+  expressSession({
+    secret: "BookEatAwesome",
+    resave: false,
+    saveUninitialized: false,
+  })
+);
 app.use(passport.initialize());
 app.use(passport.session());
-
 
 mongoose.set("useUnifiedTopology", true);
 
@@ -140,7 +141,10 @@ const accountRouter = require("./routes/account");
 const restaurantRouter = require("./routes/restaurant");
 const addressRouter = require("./routes/address");
 
-app.use("/customers",customersRouter);
+app.use(
+  "/customers",
+  /*passport.authenticate('jwt', { session: false }),*/ customersRouter
+);
 app.use("/restaurant", restaurantRouter);
 app.use("/restaurantOwners", restaurantOwnerRouter);
 app.use("/cuisineStyle", cuisineStyleRouter);
@@ -151,21 +155,30 @@ app.use("/priceRange", priceRangeRouter);
 app.use("/account", accountRouter);
 app.use("/address", addressRouter);
 
-
-app.post('/login', function (req, res, next) {
-  passport.authenticate('local', { session: false }, function (err, user, info) {
-    if (err) { return next(err) }
+app.post("/login", function (req, res, next) {
+  passport.authenticate("local", { session: false }, function (
+    err,
+    user,
+    info
+  ) {
+    if (err) {
+      return next(err);
+    }
     if (!user) {
       // *** Display message without using flash option
       // re-render the login form with a message
-      return res.json({errcode: 1, errmsg: info.message })
+      return res.json({ errcode: 1, errmsg: info.message });
     }
     req.logIn(user, function (err) {
-      if (err) { return next(err); }
+      if (err) {
+        return next(err);
+      }
       console.log("-------req.user-----------");
       console.log(user);
       console.log("-------req.user-----------");
-      const token = jwt.sign(user.toJSON(), secret.secret, { expiresIn: 50000000 });
+      const token = jwt.sign(user.toJSON(), secret.secret, {
+        expiresIn: 50000000,
+      });
       let returnData = {
         errcode: 0,
         user: user,
@@ -215,14 +228,14 @@ app.post("/customersignup", (req, res) => {
 //   res.json(returnData);
 // });
 
-
-
-app.get('/testAuth', passport.authenticate('jwt', { session: false }), function (req, res) {
-  res.json({ message: "Logged in" })
-  console.log(req.user);
-});
-
-
+app.get(
+  "/testAuth",
+  passport.authenticate("jwt", { session: false }),
+  function (req, res) {
+    res.json({ message: "Logged in" });
+    console.log(req.user);
+  }
+);
 
 app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);
