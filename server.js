@@ -41,7 +41,7 @@ const accountRouter = require("./routes/account");
 const restaurantRouter = require("./routes/restaurant");
 const addressRouter = require("./routes/address");
 
-app.use("/customers", customersRouter);
+app.use("/customers", passport.authenticate('jwt', { session: false }), customersRouter);
 app.use("/restaurant", restaurantRouter);
 app.use("/restaurantOwners", restaurantOwnerRouter);
 app.use("/cuisineStyle", cuisineStyleRouter);
@@ -57,7 +57,7 @@ app.post('/login', function (req, res, next) {
     if (!user) {
       // *** Display message without using flash option
       // re-render the login form with a message
-      return res.json({errcode: 1, message: info.message })
+      return res.json({errcode: 1, errmsg: info.message })
     }
     req.logIn(user, function (err) {
       if (err) { return next(err); }
