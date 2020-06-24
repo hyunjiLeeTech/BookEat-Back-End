@@ -143,7 +143,7 @@ const addressRouter = require("./routes/address");
 
 app.use(
   "/customers",
-  /*passport.authenticate('jwt', { session: false }),*/ customersRouter
+  passport.authenticate('jwt', { session: false }), customersRouter
 );
 app.use("/restaurant", restaurantRouter);
 app.use("/restaurantOwners", restaurantOwnerRouter);
