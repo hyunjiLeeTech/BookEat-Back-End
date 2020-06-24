@@ -2,24 +2,21 @@ const router = require("express").Router();
 let Customer = require("../models/customer.model");
 let Account = require("../models/account.model");
 
+let findAccountByEmailAsyc = async function (email) {
+  return await Account.find({ email: email });
+};
 
-let findAccountByEmailAsyc = async function(email){
-  return await Account.find({email: email});
-}
+let findCustomerByPhoneNumberAsync = async function (phonenumber) {
+  return await Customer.find({ phoneNumber: phonenumber });
+};
 
-let findCustomerByPhoneNumberAsync = async function(phonenumber){
-  return await Customer.find({phoneNumber: phonenumber});
-}
+let addCustomerAsync = async function (obj) {
+  const regExpEmail = RegExp(/^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[A-Za-z]+$/);
 
-let addCustomerAsync = async function(obj){
-  const regExpEmail = RegExp(
-    /^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[A-Za-z]+$/
-  );
-  
   const regExpPhone = RegExp(
     /^\(?([0-9]{3})\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$/
   );
-  
+
   const firstName = obj.firstName;
   const lastName = obj.lastName;
   const email = obj.email;
@@ -33,37 +30,28 @@ let addCustomerAsync = async function(obj){
     userTypeId,
   });
 
-
   let message = "";
-  if((await findAccountByEmailAsyc(email)).length > 0 ){
-    message = "This email is already registered"
-    throw message;
-  }
-  if((await findCustomerByPhoneNumberAsync(email)).length > 0 ){
-    message = "This phone number is already registered"
+  if ((await findAccountByEmailAsyc(email)).length > 0) {
+    message = "This email is already registered";
     throw message;
   }
 
-  if(firstName.length < 1){
-    message = "First name should have at least one char"
+  if (firstName.length < 1) {
+    message = "First name should have at least one char";
     throw message;
-
   }
-  if(lastName.length < 1){
-    message = "First name should have at least one char"
+  if (lastName.length < 1) {
+    message = "First name should have at least one char";
     throw message;
-
   }
-  if(!regExpEmail.test(email)){
-    message = "Incorrect email format"
+  if (!regExpEmail.test(email)) {
+    message = "Incorrect email format";
     throw message;
-
   }
 
-  if(!regExpPhone.test(phoneNumber)){
-    message = "Incorrect phone number"
+  if (!regExpPhone.test(phoneNumber)) {
+    message = "Incorrect phone number";
     throw message;
-
   }
   let account = await newAccount.save();
   const newCustomer = new Customer({
@@ -75,24 +63,18 @@ let addCustomerAsync = async function(obj){
   });
 
   return await newCustomer.save();
-}
-
-
-
-
-
-
+};
 
 //
 //get request (/customers)
 router.route("/").get((req, res) => {
-  console.log("Accessing /customers/, user:")
-  console.log(req.user)
+  console.log("Accessing /customers/, user:");
+  console.log(req.user);
   Customer.find()
     .populate("account")
     .then((customers) => res.json(customers))
     .catch((err) => res.status(400).json("Error: " + err));
-    console.log("test");
+  console.log("test");
 });
 
 // post request (/customers/add)
@@ -110,12 +92,14 @@ router.route("/add").post((req, res) => {
     phoneNumber,
     password,
     userTypeId,
-  }
-  addCustomerAsync(obj).then(()=>{
-    res.json({errcode: 0, errmsg: "success"})
-  }).catch(err =>{
-    res.json({errcode: 1, errmsg: err});
-  })
+  };
+  addCustomerAsync(obj)
+    .then(() => {
+      res.json({ errcode: 0, errmsg: "success" });
+    })
+    .catch((err) => {
+      res.json({ errcode: 1, errmsg: err });
+    });
 });
 
 router.route("/:id").get((req, res) => {
