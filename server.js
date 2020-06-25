@@ -13,6 +13,7 @@ const port = process.env.PORT || 5000;
 let Customer = require("./models/customer.model");
 let Account = require("./models/account.model");
 
+
 app.use(cors());
 app.use(express.json());
 app.use(
@@ -143,7 +144,7 @@ const addressRouter = require("./routes/address");
 
 app.use(
   "/customers",
-  /*passport.authenticate('jwt', { session: false }),*/ customersRouter
+  passport.authenticate("jwt", { session: false }), customersRouter
 );
 app.use("/restaurant", restaurantRouter);
 app.use("/restaurantOwners", restaurantOwnerRouter);
@@ -232,10 +233,13 @@ app.get(
   "/testAuth",
   passport.authenticate("jwt", { session: false }),
   function (req, res) {
+    var u = req.user; //u is this user that in database - always up to date
+
     res.json({ message: "Logged in" });
     console.log(req.user);
   }
 );
+
 
 app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);
