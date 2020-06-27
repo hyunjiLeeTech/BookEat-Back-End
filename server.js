@@ -211,13 +211,9 @@ let addRestaurantOwnerAsync = async function (obj) {
     /^\(?([0-9]{3})\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$/
   );
 
-  const regExpPassword = RegExp(
-    /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{6,32}$/
-  );
+  const regExpPostalCode = RegExp(/^\d{5}-\d{4}|\d{5}|[A-Z]\d[A-Z] \d[A-Z]\d$/);
 
-  const regExpPostalCode = RegExp(/^([A-Za-z]\d[A-Za-z][-]?\d[A-Za-z]\d)$/);
-
-  const regExpBusinessNum = RegExp(/^[0-9]{9}\s+[A-Za-z]{2}\s+[0-9]{4}$/);
+  const regExpBusinessNum = RegExp(/^[0-9]{9}$/);
 
   //account
   const userTypeId = 2; // restaurant owner
@@ -315,15 +311,15 @@ app.post("/restaurantownersignup", (req, res) => {
 
   //address
   const province = req.body.province;
-  const streetNumber = req.body.streetNumber;
-  const streetName = req.body.streetName;
-  const postalCode = req.body.postalCode;
+  const streetNumber = req.body.streetnumber;
+  const streetName = req.body.streetname;
+  const postalCode = req.body.postalcode;
   const city = req.body.city;
 
   //restaurant
-  const resName = req.body.resName;
-  const businessNum = req.body.businessNum;
-  const phoneNumber = req.body.phoneNumber;
+  const resName = req.body.resname;
+  const businessNum = req.body.businessnumber;
+  const phoneNumber = req.body.phonenumber;
   var obj = {
     userTypeId,
     password,
