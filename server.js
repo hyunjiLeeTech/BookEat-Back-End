@@ -38,6 +38,70 @@ connection.once("open", () => {
   console.log("MongoDB database connection established successfully");
 });
 
+// routers
+const customersRouter = require("./routes/customers");
+const restaurantOwnerRouter = require("./routes/restaurnatOwners");
+const cuisineStyleRouter = require("./routes/cuisineStyle");
+const priceRangeRouter = require("./routes/priceRange");
+const categoryRouter = require("./routes/category");
+const accountRouter = require("./routes/account");
+const restaurantRouter = require("./routes/restaurant");
+const addressRouter = require("./routes/address");
+
+// app.use
+app.use(
+  "/customers",
+  passport.authenticate("jwt", { session: false }),
+  customersRouter
+);
+app.use("/restaurant", restaurantRouter);
+app.use(
+  "/restaurantOwners",
+  passport.authenticate("jwt", { session: false }),
+  restaurantOwnerRouter
+);
+app.use("/cuisineStyle", cuisineStyleRouter);
+app.use("/category", categoryRouter);
+app.use("/priceRange", priceRangeRouter);
+
+app.use("/account", accountRouter);
+app.use("/address", addressRouter);
+
+//login
+app.post("/login", function (req, res, next) {
+  passport.authenticate("local", { session: false }, function (
+    err,
+    user,
+    info
+  ) {
+    if (err) {
+      return next(err);
+    }
+    if (!user) {
+      // *** Display message without using flash option
+      // re-render the login form with a message
+      return res.json({ errcode: 1, errmsg: info.message });
+    }
+    req.logIn(user, function (err) {
+      if (err) {
+        return next(err);
+      }
+      console.log("-------req.user-----------");
+      console.log(user);
+      console.log("-------req.user-----------");
+      const token = jwt.sign(user.toJSON(), secret.secret, {
+        expiresIn: 50000000,
+      });
+      let returnData = {
+        errcode: 0,
+        user: user,
+        jwt: token,
+      };
+      res.json(returnData);
+    });
+  })(req, res, next);
+});
+
 // for user signup
 let findAccountByEmailAsyc = async function (email) {
   return await Account.find({ email: email });
@@ -106,63 +170,6 @@ let addCustomerAsync = async function (obj) {
 
   return await newCustomer.save();
 };
-
-const customersRouter = require("./routes/customers");
-const restaurantOwnerRouter = require("./routes/restaurnatOwners");
-const cuisineStyleRouter = require("./routes/cuisineStyle");
-const priceRangeRouter = require("./routes/priceRange");
-const categoryRouter = require("./routes/category");
-const accountRouter = require("./routes/account");
-const restaurantRouter = require("./routes/restaurant");
-const addressRouter = require("./routes/address");
-const RestaurnatOwner = require("./models/restaurantOwner.model");
-
-app.use(
-  "/customers",
-  /*passport.authenticate('jwt', { session: false }),*/ customersRouter
-);
-app.use("/restaurant", restaurantRouter);
-app.use("/restaurantOwners", restaurantOwnerRouter);
-app.use("/cuisineStyle", cuisineStyleRouter);
-app.use("/category", categoryRouter);
-app.use("/priceRange", priceRangeRouter);
-
-app.use("/account", accountRouter);
-app.use("/address", addressRouter);
-
-app.post("/login", function (req, res, next) {
-  passport.authenticate("local", { session: false }, function (
-    err,
-    user,
-    info
-  ) {
-    if (err) {
-      return next(err);
-    }
-    if (!user) {
-      // *** Display message without using flash option
-      // re-render the login form with a message
-      return res.json({ errcode: 1, errmsg: info.message });
-    }
-    req.logIn(user, function (err) {
-      if (err) {
-        return next(err);
-      }
-      console.log("-------req.user-----------");
-      console.log(user);
-      console.log("-------req.user-----------");
-      const token = jwt.sign(user.toJSON(), secret.secret, {
-        expiresIn: 50000000,
-      });
-      let returnData = {
-        errcode: 0,
-        user: user,
-        jwt: token,
-      };
-      res.json(returnData);
-    });
-  })(req, res, next);
-});
 
 // post request (/customers/add)
 app.post("/customersignup", (req, res) => {
@@ -272,6 +279,21 @@ let addRestaurantOwnerAsync = async function (obj) {
 
   if (!regExpPostalCode.test(postalCode)) {
     message = "Incorrect postal code";
+    throw message;
+  }
+
+  if (resName.length < 1) {
+    message = "Restaurant name should have at least one char";
+    throw message;
+  }
+
+  if (streetName.length < 1) {
+    message = "Street name should have at least one char";
+    throw message;
+  }
+
+  if (city.length < 1) {
+    message = "City should have at least one char";
     throw message;
   }
 
