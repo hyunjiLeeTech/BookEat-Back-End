@@ -3,16 +3,22 @@
  */
 const passport = require('passport');
 const LocalStrategy = require ("passport-local");
-const JwtStrategy = require('passport-jwt').Strategy,
-    ExtractJwt = require('passport-jwt').ExtractJwt;
+
+const passport_jwt = require('passport-jwt');
+
+const JwtStrategy = passport_jwt.Strategy,
+    ExtractJwt = passport_jwt.ExtractJwt;
 const jwt = require('jsonwebtoken');
 const secret = require('./secret');
+
 
 var opts = {}
 opts.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
 opts.secretOrKey = secret.secret;
+opts.passReqToCallback = true;
 
-const Account = require("../models/account.model")
+const Account = require("../models/account.model");
+const { request } = require('express');
 
 // import passport from 'passport';
 // import LocalStrategy from 'passport-local';
@@ -57,8 +63,15 @@ passport.use(new LocalStrategy(
 ));
 
 
-passport.use(new JwtStrategy(opts, function(jwt_payload, done) {
+passport.use(new JwtStrategy(opts, function(req, jwt_payload, done) {
+    let requestToken = null;
+    try{
+        requestToken = req.headers['x-access-token'];
+    }catch(err){
+        return done(err) 
+    }
     Account.findOne({ _id: jwt_payload._id }, function (err, result) {
+        console.log(requestToken);
         if (err) {
             console.log(err);
             return done(err);

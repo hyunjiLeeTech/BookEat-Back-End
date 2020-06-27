@@ -180,6 +180,7 @@ app.post("/login", function (req, res, next) {
       const token = jwt.sign(user.toJSON(), secret.secret, {
         expiresIn: 50000000,
       });
+      user.password = '';
       let returnData = {
         errcode: 0,
         user: user,
@@ -234,7 +235,6 @@ app.get(
   passport.authenticate("jwt", { session: false }),
   function (req, res) {
     var u = req.user; //u is this user that in database - always up to date
-
     res.json({ message: "Logged in" });
     console.log(req.user);
   }
