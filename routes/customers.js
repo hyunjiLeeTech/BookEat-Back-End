@@ -6,6 +6,7 @@ let findAccountByEmailAsyc = async function (email) {
   return await Account.find({ email: email });
 };
 
+<<<<<<< HEAD
 let findCustomerByPhoneNumberAsync = async function (phonenumber) {
   return await Customer.find({ phoneNumber: phonenumber });
 };
@@ -13,6 +14,20 @@ let findCustomerByPhoneNumberAsync = async function (phonenumber) {
 let addCustomerAsync = async function (obj) {
   const regExpEmail = RegExp(/^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[A-Za-z]+$/);
 
+=======
+
+
+
+
+
+let findCustomerByPhoneNumberAsync = async function (phonenumber) {
+  return await Customer.find({ phoneNumber: phonenumber });
+};
+
+let addCustomerAsync = async function (obj) {
+  const regExpEmail = RegExp(/^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[A-Za-z]+$/);
+
+>>>>>>> 4f8231543a75ca27be7362abaf1bd9d8243e9cc1
   const regExpPhone = RegExp(
     /^\(?([0-9]{3})\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$/
   );
@@ -76,6 +91,18 @@ router.route("/").get((req, res) => {
     .catch((err) => res.status(400).json("Error: " + err));
   console.log("test");
 });
+
+
+router.route("/getcustomerinfo").get((req, res)=>{
+  var _id = req.user._id;
+  //query from db
+  console.log("/customers/getcustomerinfo:")
+  Customer.findOne({account: _id}).then(result=>{
+    console.log(result)
+    res.json(result); //TODO: Not working correctly, needs to be fixed    
+  })
+  //console.log(req.user);
+})
 
 // post request (/customers/add)
 router.route("/add").post((req, res) => {

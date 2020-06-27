@@ -10,6 +10,8 @@ const passport = require("./auth/passport-config");
 const jwt = require("jsonwebtoken");
 const app = express();
 const port = process.env.PORT || 5000;
+let Customer = require("./models/customer.model");
+let Account = require("./models/account.model");
 
 app.use(cors());
 app.use(express.json());
@@ -33,6 +35,73 @@ connection.once("open", () => {
   console.log("MongoDB database connection established successfully");
 });
 
+let findAccountByEmailAsyc = async function (email) {
+  return await Account.find({ email: email });
+};
+
+let findCustomerByPhoneNumberAsync = async function (phonenumber) {
+  return await Customer.find({ phoneNumber: phonenumber });
+};
+
+let addCustomerAsync = async function (obj) {
+  const regExpEmail = RegExp(/^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[A-Za-z]+$/);
+
+  const regExpPhone = RegExp(
+    /^\(?([0-9]{3})\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$/
+  );
+
+  const firstName = obj.firstName;
+  const lastName = obj.lastName;
+  const email = obj.email;
+  const phoneNumber = obj.phoneNumber;
+  const password = obj.password;
+  const userTypeId = obj.userTypeId;
+
+  const newAccount = new Account({
+    email,
+    password,
+    userTypeId,
+  });
+
+  let message = "";
+  if ((await findAccountByEmailAsyc(email)).length > 0) {
+    message = "This email is already registered";
+    throw message;
+  }
+  if ((await findCustomerByPhoneNumberAsync(phoneNumber)).length > 0) {
+    message = "This phone number is already registered";
+    throw message;
+  }
+
+  if (firstName.length < 1) {
+    message = "First name should have at least one char";
+    throw message;
+  }
+  if (lastName.length < 1) {
+    message = "First name should have at least one char";
+    throw message;
+  }
+  if (!regExpEmail.test(email)) {
+    message = "Incorrect email format";
+    throw message;
+  }
+
+  if (!regExpPhone.test(phoneNumber)) {
+    message = "Incorrect phone number";
+    throw message;
+  }
+  let account = await newAccount.save();
+  const newCustomer = new Customer({
+    firstName,
+    lastName,
+    phoneNumber,
+    noShowCount: 0,
+    account: account._id,
+  });
+
+  return await newCustomer.save();
+};
+
 const customersRouter = require("./routes/customers");
 const restaurantOwnerRouter = require("./routes/restaurnatOwners");
 const cuisineStyleRouter = require("./routes/cuisineStyle");
@@ -51,6 +120,7 @@ app.use("/restaurantOwners", restaurantOwnerRouter);
 app.use("/cuisineStyle", cuisineStyleRouter);
 app.use("/category", categoryRouter);
 app.use("/priceRange", priceRangeRouter);
+
 app.use("/account", accountRouter);
 app.use("/address", addressRouter);
 
@@ -88,6 +158,30 @@ app.post("/login", function (req, res, next) {
   })(req, res, next);
 });
 
+// post request (/customers/add)
+app.post("/customersignup", (req, res) => {
+  const firstName = req.body.firstname;
+  const lastName = req.body.lastname;
+  const email = req.body.email;
+  const phoneNumber = req.body.phonenumber;
+  const password = req.body.password;
+  const userTypeId = 1; //customer
+  var obj = {
+    firstName,
+    lastName,
+    email,
+    phoneNumber,
+    password,
+    userTypeId,
+  };
+  addCustomerAsync(obj)
+    .then(() => {
+      res.json({ errcode: 0, errmsg: "success" });
+    })
+    .catch((err) => {
+      res.json({ errcode: 1, errmsg: err });
+    });
+});
 // app.post('/login', passport.authenticate('local', {session: false}), function (req, res) {
 //   console.log("-------req.user-----------");
 //   console.log(req.user);
@@ -107,6 +201,8 @@ app.get(
   "/testAuth",
   passport.authenticate("jwt", { session: false }),
   function (req, res) {
+    var u = req.user; //u is this user that in database - always up to date
+
     res.json({ message: "Logged in" });
     console.log(req.user);
   }
