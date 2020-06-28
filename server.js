@@ -156,6 +156,19 @@ app.use("/priceRange", priceRangeRouter);
 app.use("/account", accountRouter);
 app.use("/address", addressRouter);
 
+app.get('/logout', passport.authenticate("jwt", { session: false }), (req, res)=>{
+  var u = req.user;
+  if(u){
+    console.log("logging out user: " + u.email);
+    u.token = '';
+    u.save().then(()=>{
+      res.json({errcode: 0, errmsg: 'You have been logged out'});
+    }).catch(err => {
+      res.json({errcode: 1, errmsg: err});
+    })
+  }
+})
+
 app.post("/login", function (req, res, next) {
   passport.authenticate("local", { session: false }, function (
     err,
@@ -177,16 +190,25 @@ app.post("/login", function (req, res, next) {
       console.log("-------req.user-----------");
       console.log(user);
       console.log("-------req.user-----------");
+      user.token = '';
       const token = jwt.sign(user.toJSON(), secret.secret, {
-        expiresIn: 50000000,
+        expiresIn: '30 days',
       });
-      user.password = '';
-      let returnData = {
-        errcode: 0,
-        user: user,
-        jwt: token,
-      };
-      res.json(returnData);
+      user.token = token;
+      user.save().then(()=>{
+        console.log("User: " + user.email + " access token updated");
+        user.password = '';
+        user.token = '';
+        let returnData = {
+          errcode: 0,
+          user: user,
+          jwt: token,
+        };
+        res.json(returnData);
+      }).catch(err => {
+        console.log(err);
+        next();
+      })
     });
   })(req, res, next);
 });
