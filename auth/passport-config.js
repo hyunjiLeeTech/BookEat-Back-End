@@ -71,7 +71,6 @@ passport.use(new JwtStrategy(opts, function(req, jwt_payload, done) {
         return done(err) 
     }
     Account.findOne({ _id: jwt_payload._id }, function (err, result) {
-        console.log(requestToken);
         if (err) {
             console.log(err);
             return done(err);
@@ -80,7 +79,13 @@ passport.use(new JwtStrategy(opts, function(req, jwt_payload, done) {
             console.log("user not found");
             return done(null, false, { message: 'user not found.' });
         }
-        console.log("jwt auth done")
+        if(requestToken !== result.token){
+            console.log("Invalid access token for user: " + result.email)
+            console.log("Request token: " + requestToken)
+            console.log("Expected token(in db): " + result.token);
+            return done(null, false, { message: "invalied access token."});
+        }
+        console.log("User: " + result.email + " vaildated by JWT stragtegy")
         return done(null, result);
     })
 }));
