@@ -67,18 +67,24 @@ app.use("/priceRange", priceRangeRouter);
 app.use("/account", accountRouter);
 app.use("/address", addressRouter);
 
-app.get('/logout', passport.authenticate("jwt", { session: false }), (req, res)=>{
-  var u = req.user;
-  if(u){
-    console.log("logging out user: " + u.email);
-    u.token = '';
-    u.save().then(()=>{
-      res.json({errcode: 0, errmsg: 'You have been logged out'});
-    }).catch(err => {
-      res.json({errcode: 1, errmsg: err});
-    })
+app.get(
+  "/logout",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    var u = req.user;
+    if (u) {
+      console.log("logging out user: " + u.email);
+      u.token = "";
+      u.save()
+        .then(() => {
+          res.json({ errcode: 0, errmsg: "You have been logged out" });
+        })
+        .catch((err) => {
+          res.json({ errcode: 1, errmsg: err });
+        });
+    }
   }
-})
+);
 
 //login
 app.post("/login", function (req, res, next) {
@@ -102,25 +108,28 @@ app.post("/login", function (req, res, next) {
       console.log("-------req.user-----------");
       console.log(user);
       console.log("-------req.user-----------");
-      user.token = '';
+      user.token = "";
       const token = jwt.sign(user.toJSON(), secret.secret, {
-        expiresIn: '30 days',
+        expiresIn: "30 days",
       });
       user.token = token;
-      user.save().then(()=>{
-        console.log("User: " + user.email + " access token updated");
-        user.password = '';
-        user.token = '';
-        let returnData = {
-          errcode: 0,
-          user: user,
-          jwt: token,
-        };
-        res.json(returnData);
-      }).catch(err => {
-        console.log(err);
-        next();
-      })
+      user
+        .save()
+        .then(() => {
+          console.log("User: " + user.email + " access token updated");
+          user.password = "";
+          user.token = "";
+          let returnData = {
+            errcode: 0,
+            user: user,
+            jwt: token,
+          };
+          res.json(returnData);
+        })
+        .catch((err) => {
+          console.log(err);
+          next();
+        });
     });
   })(req, res, next);
 });
@@ -255,7 +264,7 @@ let addRestaurantOwnerAsync = async function (obj) {
 
   //address
   const province = obj.province;
-  const streetNumber = obj.streetNumber;
+  const streetNum = obj.streetNumber;
   const streetName = obj.streetName;
   const postalCode = obj.postalCode;
   const city = obj.city;
@@ -274,7 +283,7 @@ let addRestaurantOwnerAsync = async function (obj) {
   const newAddress = new Address({
     province,
     streetName,
-    streetNumber,
+    streetNum,
     postalCode,
     city,
   });
