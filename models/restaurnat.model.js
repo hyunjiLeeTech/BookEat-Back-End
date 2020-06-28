@@ -23,7 +23,7 @@ const restaurantSchema = new Schema(
     friCloseTime: { type: Date, required: false },
     satCloseTime: { type: Date, required: false },
     sunCloseTime: { type: Date, required: false },
-    addressId: { type: Schema.Types.ObjectId, required: true },
+    addressId: { type: Schema.Types.ObjectId, required: true, ref: "Address" },
     restaurantOwnerId: {
       type: Schema.Types.ObjectId,
       ref: "RestaurantOwner",
