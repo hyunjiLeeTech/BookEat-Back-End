@@ -81,10 +81,12 @@ router.route("/getcustomerinfo").get((req, res) => {
   var _id = req.user._id;
   //query from db
   console.log("/customers/getcustomerinfo:");
-  Customer.findOne({ account: _id }).then((result) => {
-    console.log(result);
-    res.json(result); //TODO: Not working correctly, needs to be fixed
-  });
+  Customer.findOne({ account: _id })
+    .populate("account")
+    .then((result) => {
+      console.log(result);
+      res.json(result); //TODO: Not working correctly, needs to be fixed
+    });
   //console.log(req.user);
 });
 
