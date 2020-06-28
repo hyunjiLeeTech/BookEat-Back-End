@@ -16,6 +16,21 @@ router.route("/").get((req, res) => {
     .catch((err) => res.status(400).json("Error: " + err));
 });
 
+router.route("/getrestaurantinfo").get((req, res) => {
+  var _id = req.user._id;
+  //query from db
+  console.log("/restaurantOwners/getrestaurantinfo:");
+  RestaurantOwner.findOne({ account: _id }).then((restOwner) => {
+    Restaurant.findOne({ restaurantOwnerId: restOwner._id })
+      .populate("addressId")
+      .then((restaurant) => {
+        console.log(restaurant);
+        res.json(restaurant);
+      });
+  });
+  //console.log(req.user);
+});
+
 //restaurant signup
 let addRestaurantOwnerAsync = async function (obj) {
   const regExpEmail = RegExp(/^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[A-Za-z]+$/);
