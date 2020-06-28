@@ -6,11 +6,6 @@ let findAccountByEmailAsyc = async function (email) {
   return await Account.find({ email: email });
 };
 
-
-
-
-
-
 let findCustomerByPhoneNumberAsync = async function (phonenumber) {
   return await Customer.find({ phoneNumber: phonenumber });
 };
@@ -82,17 +77,16 @@ router.route("/").get((req, res) => {
   console.log("test");
 });
 
-
-router.route("/getcustomerinfo").get((req, res)=>{
+router.route("/getcustomerinfo").get((req, res) => {
   var _id = req.user._id;
   //query from db
-  console.log("/customers/getcustomerinfo:")
-  Customer.findOne({account: _id}).then(result=>{
-    console.log(result)
-    res.json(result); //TODO: Not working correctly, needs to be fixed    
-  })
+  console.log("/customers/getcustomerinfo:");
+  Customer.findOne({ account: _id }).then((result) => {
+    console.log(result);
+    res.json(result); //TODO: Not working correctly, needs to be fixed
+  });
   //console.log(req.user);
-})
+});
 
 // post request (/customers/add)
 router.route("/add").post((req, res) => {
