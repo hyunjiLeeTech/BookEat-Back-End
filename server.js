@@ -12,6 +12,9 @@ const app = express();
 const port = process.env.PORT || 5000;
 let Customer = require("./models/customer.model");
 let Account = require("./models/account.model");
+let RestaurantOwner = require("./models/restaurantOwner.model");
+let Restaurant = require("./models/restaurnat.model");
+let Address = require("./models/address.model");
 
 app.use(cors());
 app.use(express.json());
@@ -35,103 +38,7 @@ connection.once("open", () => {
   console.log("MongoDB database connection established successfully");
 });
 
-
-let findAccountByEmailAsyc = async function(email){
-  return await Account.find({email: email});
-}
-
-let findCustomerByPhoneNumberAsync = async function(phonenumber){
-  return await Customer.find({phoneNumber: phonenumber});
-}
-
-let addCustomerAsync = async function(obj){
-  const regExpEmail = RegExp(
-    /^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[A-Za-z]+$/
-  );
-  
-  const regExpPhone = RegExp(
-    /^\(?([0-9]{3})\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$/
-  );
-  
-  const firstName = obj.firstName;
-  const lastName = obj.lastName;
-  const email = obj.email;
-  const phoneNumber = obj.phoneNumber;
-  const password = obj.password;
-  const userTypeId = obj.userTypeId;
-
-  const newAccount = new Account({
-    email,
-    password,
-    userTypeId,
-  });
-
-
-  let message = "";
-  if((await findAccountByEmailAsyc(email)).length > 0 ){
-    message = "This email is already registered"
-    throw message;
-  }
-  if((await findCustomerByPhoneNumberAsync(phoneNumber)).length > 0 ){
-    message = "This phone number is already registered"
-    throw message;
-  }
-
-  if(firstName.length < 1){
-    message = "First name should have at least one char"
-    throw message;
-
-  }
-  if(lastName.length < 1){
-    message = "First name should have at least one char"
-    throw message;
-
-  }
-  if(!regExpEmail.test(email)){
-    message = "Incorrect email format"
-    throw message;
-
-  }
-
-  if(!regExpPhone.test(phoneNumber)){
-    message = "Incorrect phone number"
-    throw message;
-
-  }
-  let account = await newAccount.save();
-  const newCustomer = new Customer({
-    firstName,
-    lastName,
-    phoneNumber,
-    noShowCount: 0,
-    account: account._id,
-  });
-
-  return await newCustomer.save();
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// routers
 const customersRouter = require("./routes/customers");
 const restaurantOwnerRouter = require("./routes/restaurnatOwners");
 const cuisineStyleRouter = require("./routes/cuisineStyle");
@@ -141,20 +48,39 @@ const accountRouter = require("./routes/account");
 const restaurantRouter = require("./routes/restaurant");
 const addressRouter = require("./routes/address");
 
+// app.use
 app.use(
   "/customers",
-  passport.authenticate('jwt', { session: false }), customersRouter
+  passport.authenticate("jwt", { session: false }),
+  customersRouter
 );
 app.use("/restaurant", restaurantRouter);
-app.use("/restaurantOwners", restaurantOwnerRouter);
+app.use(
+  "/restaurantOwners",
+  passport.authenticate("jwt", { session: false }),
+  restaurantOwnerRouter
+);
 app.use("/cuisineStyle", cuisineStyleRouter);
 app.use("/category", categoryRouter);
 app.use("/priceRange", priceRangeRouter);
 
-
 app.use("/account", accountRouter);
 app.use("/address", addressRouter);
 
+app.get('/logout', passport.authenticate("jwt", { session: false }), (req, res)=>{
+  var u = req.user;
+  if(u){
+    console.log("logging out user: " + u.email);
+    u.token = '';
+    u.save().then(()=>{
+      res.json({errcode: 0, errmsg: 'You have been logged out'});
+    }).catch(err => {
+      res.json({errcode: 1, errmsg: err});
+    })
+  }
+})
+
+//login
 app.post("/login", function (req, res, next) {
   passport.authenticate("local", { session: false }, function (
     err,
@@ -176,20 +102,97 @@ app.post("/login", function (req, res, next) {
       console.log("-------req.user-----------");
       console.log(user);
       console.log("-------req.user-----------");
+      user.token = '';
       const token = jwt.sign(user.toJSON(), secret.secret, {
-        expiresIn: 50000000,
+        expiresIn: '30 days',
       });
-      let returnData = {
-        errcode: 0,
-        user: user,
-        jwt: token,
-      };
-      res.json(returnData);
+      user.token = token;
+      user.save().then(()=>{
+        console.log("User: " + user.email + " access token updated");
+        user.password = '';
+        user.token = '';
+        let returnData = {
+          errcode: 0,
+          user: user,
+          jwt: token,
+        };
+        res.json(returnData);
+      }).catch(err => {
+        console.log(err);
+        next();
+      })
     });
   })(req, res, next);
 });
 
+// for user signup
+let findAccountByEmailAsyc = async function (email) {
+  return await Account.find({ email: email });
+};
 
+let findCustomerByPhoneNumberAsync = async function (phonenumber) {
+  return await Customer.find({ phoneNumber: phonenumber });
+};
+
+// for customer signup
+let addCustomerAsync = async function (obj) {
+  const regExpEmail = RegExp(/^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[A-Za-z]+$/);
+
+  const regExpPhone = RegExp(
+    /^\(?([0-9]{3})\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$/
+  );
+
+  const firstName = obj.firstName;
+  const lastName = obj.lastName;
+  const email = obj.email;
+  const phoneNumber = obj.phoneNumber;
+  const password = obj.password;
+  const userTypeId = obj.userTypeId;
+
+  const newAccount = new Account({
+    email,
+    password,
+    userTypeId,
+  });
+
+  let message = "";
+  if ((await findAccountByEmailAsyc(email)).length > 0) {
+    message = "This email is already registered";
+    throw message;
+  }
+  if ((await findCustomerByPhoneNumberAsync(phoneNumber)).length > 0) {
+    message = "This phone number is already registered";
+    throw message;
+  }
+
+  if (firstName.length < 1) {
+    message = "First name should have at least one char";
+    throw message;
+  }
+  if (lastName.length < 1) {
+    message = "First name should have at least one char";
+    throw message;
+  }
+  if (!regExpEmail.test(email)) {
+    message = "Incorrect email format";
+    throw message;
+  }
+
+  if (!regExpPhone.test(phoneNumber)) {
+    message = "Incorrect phone number";
+    throw message;
+  }
+  let account = await newAccount.save();
+  const newCustomer = new Customer({
+    firstName,
+    lastName,
+    phoneNumber,
+    noShowCount: 0,
+    account: account._id,
+  });
+
+  return await newCustomer.save();
+};
 
 // post request (/customers/add)
 app.post("/customersignup", (req, res) => {
@@ -206,13 +209,15 @@ app.post("/customersignup", (req, res) => {
     phoneNumber,
     password,
     userTypeId,
-  }
-  addCustomerAsync(obj).then(()=>{
-    res.json({errcode: 0, errmsg: "success"})
-  }).catch(err =>{
-    res.json({errcode: 1, errmsg: err});
-  })
-}); 
+  };
+  addCustomerAsync(obj)
+    .then(() => {
+      res.json({ errcode: 0, errmsg: "success" });
+    })
+    .catch((err) => {
+      res.json({ errcode: 1, errmsg: err });
+    });
+});
 // app.post('/login', passport.authenticate('local', {session: false}), function (req, res) {
 //   console.log("-------req.user-----------");
 //   console.log(req.user);
@@ -228,10 +233,165 @@ app.post("/customersignup", (req, res) => {
 //   res.json(returnData);
 // });
 
+//restaurant signup
+let addRestaurantOwnerAsync = async function (obj) {
+  const regExpEmail = RegExp(/^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[A-Za-z]+$/);
+
+  const regExpPhone = RegExp(
+    /^\(?([0-9]{3})\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$/
+  );
+
+  const regExpPostalCode = RegExp(/^\d{5}-\d{4}|\d{5}|[A-Z]\d[A-Z] \d[A-Z]\d$/);
+
+  const regExpBusinessNum = RegExp(/^[0-9]{9}$/);
+
+  //account
+  const userTypeId = 2; // restaurant owner
+  const password = obj.password;
+  const email = obj.email;
+
+  //restaurantOwner
+  // this is for restaurant
+
+  //address
+  const province = obj.province;
+  const streetNumber = obj.streetNumber;
+  const streetName = obj.streetName;
+  const postalCode = obj.postalCode;
+  const city = obj.city;
+
+  //restaurant
+  const resName = obj.resName;
+  const businessNum = obj.businessNum;
+  const phoneNumber = obj.phoneNumber;
+
+  const newAccount = new Account({
+    email,
+    password,
+    userTypeId,
+  });
+
+  const newAddress = new Address({
+    province,
+    streetName,
+    streetNumber,
+    postalCode,
+    city,
+  });
+
+  let message = "";
+  if ((await findAccountByEmailAsyc(email)).length > 0) {
+    message = "This email is already registered";
+    throw message;
+  }
+
+  if (!regExpEmail.test(email)) {
+    message = "Incorrect email format";
+    throw message;
+  }
+
+  if (!regExpPhone.test(phoneNumber)) {
+    message = "Incorrect phone number";
+    throw message;
+  }
+
+  if (!regExpBusinessNum.test(businessNum)) {
+    message = "Incorrect business number";
+    throw message;
+  }
+
+  if (!regExpPostalCode.test(postalCode)) {
+    message = "Incorrect postal code";
+    throw message;
+  }
+
+  if (resName.length < 1) {
+    message = "Restaurant name should have at least one char";
+    throw message;
+  }
+
+  if (streetName.length < 1) {
+    message = "Street name should have at least one char";
+    throw message;
+  }
+
+  if (city.length < 1) {
+    message = "City should have at least one char";
+    throw message;
+  }
+
+  // if (!regExpPassword.test(password)) {
+  //   message = "Incorrect password";
+  //   throw message;
+  // }
+
+  let acnt = await newAccount.save();
+  let address = await newAddress.save();
+
+  const newRestaurantOwner = new RestaurantOwner({
+    account: acnt._id,
+  });
+
+  let restOwner = await newRestaurantOwner.save();
+
+  const newRestaurant = new Restaurant({
+    resName,
+    phoneNumber,
+    businessNum,
+    restaurantOwnerId: restOwner._id,
+    addressId: address._id,
+  });
+
+  return await newRestaurant.save();
+};
+
+app.post("/restaurantownersignup", (req, res) => {
+  //account
+  const userTypeId = 2; // restaurant owner
+  const password = req.body.password;
+  const email = req.body.email;
+
+  //restaurantOwner
+  // this is for restaurant
+
+  //address
+  const province = req.body.province;
+  const streetNumber = req.body.streetnumber;
+  const streetName = req.body.streetname;
+  const postalCode = req.body.postalcode;
+  const city = req.body.city;
+
+  //restaurant
+  const resName = req.body.resname;
+  const businessNum = req.body.businessnumber;
+  const phoneNumber = req.body.phonenumber;
+  var obj = {
+    userTypeId,
+    password,
+    email,
+    province,
+    streetNumber,
+    streetName,
+    postalCode,
+    city,
+    resName,
+    businessNum,
+    phoneNumber,
+  };
+  addRestaurantOwnerAsync(obj)
+    .then(() => {
+      res.json({ errcode: 0, errmsg: "success" });
+    })
+    .catch((err) => {
+      res.json({ errcode: 1, errmsg: err });
+    });
+});
+
 app.get(
   "/testAuth",
   passport.authenticate("jwt", { session: false }),
   function (req, res) {
+    var u = req.user; //u is this user that in database - always up to date
     res.json({ message: "Logged in" });
     console.log(req.user);
   }
