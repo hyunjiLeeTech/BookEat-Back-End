@@ -5,12 +5,9 @@ const Address = require("../models/address.model");
 
 router.route("/").get((req, res) => {
   Restaurant.find()
-    .populate("address")
-    .populate("restaurantOwner")
+    .populate("addressId")
     .then((restaurant) => res.json(restaurant))
     .catch((err) => res.status(400).json("Error: " + err));
 });
-
-
 
 module.exports = router;
