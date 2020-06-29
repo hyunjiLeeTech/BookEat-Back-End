@@ -410,7 +410,7 @@ let addManagerAsync = async function (obj) {
   const firstname = obj.firstname;
   const lastname = obj.lastname;
   const phonenumber = obj.phonenumber;
-  const restaurantId = obj.restaurantId;
+  const accountId = obj.accountId;
 
   const newAccount = new Account({
     email,
@@ -452,6 +452,8 @@ let addManagerAsync = async function (obj) {
   }
 
   let account = await newAccount.save();
+  let restaurantId = await findRestaurantIdAsync(accountId);
+
   const newManager = new Manager({
     firstname,
     lastname,
@@ -474,7 +476,7 @@ app.post("/managersignup", (req, res) => {
   const firstname = req.body.firstName;
   const lastname = req.body.lastName;
   const phonenumber = req.body.phonenumber;
-  const restaurantId = req.body.restaurantId;
+  const accountId = req.body.accountId;
 
   obj = {
     email,
@@ -482,7 +484,7 @@ app.post("/managersignup", (req, res) => {
     firstname,
     lastname,
     phonenumber,
-    restaurantId,
+    accountId,
   };
 
   addManagerAsync(obj)
@@ -493,6 +495,21 @@ app.post("/managersignup", (req, res) => {
       res.json({ errcode: 1, errmsg: err });
     });
 });
+
+let findRestaurantIdAsync = async (accountId) => {
+  let resOwnerId, resId;
+  await RestaurantOwner.findOne({ account: accountId }).then((restOwner) => {
+    resOwnerId = restOwner._id;
+  });
+
+  await Restaurant.findOne({ restaurantOwnerId: resOwnerId }).then(
+    (restaurant) => {
+      resId = restaurant._id;
+    }
+  );
+
+  return resId;
+};
 
 app.get(
   "/testAuth",
