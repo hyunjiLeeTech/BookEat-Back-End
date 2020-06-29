@@ -35,7 +35,7 @@ router.route("/add").post((req, res) => {
       res.json({ errorcode: 0, errmsg: "success" });
     })
     .catch((err) => {
-      re.json({ errcode: 1, errmsg: err });
+      res.json({ errcode: 1, errmsg: err });
     });
 });
 
