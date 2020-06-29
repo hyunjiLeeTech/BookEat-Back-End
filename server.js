@@ -15,6 +15,7 @@ let Account = require("./models/account.model");
 let RestaurantOwner = require("./models/restaurantOwner.model");
 let Restaurant = require("./models/restaurnat.model");
 let Address = require("./models/address.model");
+let Manager = require("./models/manager.model");
 
 app.use(cors());
 app.use(express.json());
@@ -390,6 +391,101 @@ app.post("/restaurantownersignup", (req, res) => {
     phoneNumber,
   };
   addRestaurantOwnerAsync(obj)
+    .then(() => {
+      res.json({ errcode: 0, errmsg: "success" });
+    })
+    .catch((err) => {
+      res.json({ errcode: 1, errmsg: err });
+    });
+});
+
+//manager sign up
+let addManagerAsync = async function (obj) {
+  //account info
+  const email = obj.email;
+  const password = obj.password;
+  const userTypeId = 3; // manager user type: 3
+
+  //manager info
+  const firstname = obj.firstname;
+  const lastname = obj.lastname;
+  const phonenumber = obj.phonenumber;
+  const restaurantId = obj.restaurantId;
+
+  const newAccount = new Account({
+    email,
+    password,
+    userTypeId,
+  });
+
+  //Validation
+  let message = "";
+  const regExpEmail = RegExp(/^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[A-Za-z]+$/);
+
+  const regExpPhone = RegExp(
+    /^\(?([0-9]{3})\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$/
+  );
+
+  if ((await findAccountByEmailAsyc(email)).length > 0) {
+    message = "This email is already registered";
+    throw message;
+  }
+
+  if (!regExpEmail.test(email)) {
+    message = "Incorrect email format";
+    throw message;
+  }
+
+  if (!regExpPhone.test(phonenumber)) {
+    message = "Incorrect phone number";
+    throw message;
+  }
+
+  if (lastname.length < 1) {
+    message = "Lastname should have at least one char";
+    throw message;
+  }
+
+  if (firstname.length < 1) {
+    message = "Firstname should have at least one char";
+    throw message;
+  }
+
+  let account = await newAccount.save();
+  const newManager = new Manager({
+    firstname,
+    lastname,
+    phonenumber,
+    accountId: account._id,
+    restaurantId,
+  });
+
+  return await newManager.save();
+};
+
+app.post("/managersignup", (req, res) => {
+  console.log("Accessing /managersignup");
+
+  //account info
+  const email = req.body.email;
+  const password = req.body.password;
+
+  //manager info
+  const firstname = req.body.firstName;
+  const lastname = req.body.lastName;
+  const phonenumber = req.body.phonenumber;
+  const restaurantId = req.body.restaurantId;
+
+  obj = {
+    email,
+    password,
+    firstname,
+    lastname,
+    phonenumber,
+    restaurantId,
+  };
+
+  addManagerAsync(obj)
     .then(() => {
       res.json({ errcode: 0, errmsg: "success" });
     })
