@@ -47,6 +47,7 @@ const categoryRouter = require("./routes/category");
 const accountRouter = require("./routes/account");
 const restaurantRouter = require("./routes/restaurant");
 const addressRouter = require("./routes/address");
+const managerRouter = require("./routes/manager");
 
 // app.use
 app.use(
@@ -66,6 +67,7 @@ app.use("/priceRange", priceRangeRouter);
 
 app.use("/account", accountRouter);
 app.use("/address", addressRouter);
+app.use("/manager", managerRouter);
 
 app.get(
   "/logout",
