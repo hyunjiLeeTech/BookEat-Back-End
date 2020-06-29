@@ -30,7 +30,13 @@ router.route("/add").post((req, res) => {
     phonenumber,
   };
 
-  addManagerAsync(obj);
+  addManagerAsync(obj)
+    .then(() => {
+      res.json({ errorcode: 0, errmsg: "success" });
+    })
+    .catch((err) => {
+      re.json({ errcode: 1, errmsg: err });
+    });
 });
 
 let addManagerAsync = async function (obj) {
@@ -43,6 +49,22 @@ let addManagerAsync = async function (obj) {
   const firstname = obj.firstname;
   const lastname = obj.lastname;
   const phonenumber = obj.phonenumber;
+
+  const newAccount = new Account({
+    email,
+    password,
+    userTypeId,
+  });
+
+  let account = await newAccount.save();
+  const newManager = new Manager({
+    firstname,
+    lastname,
+    phonenumber,
+    accountId: account._id,
+  });
+
+  return await newManager.save();
 };
 
 module.exports = router;
