@@ -11,9 +11,11 @@ router.route("/").get((req, res) => {
 // post request (/category/add)
 router.route("/add").post((req, res) => {
   const categoryName = req.body.categoryName;
+  const categoryVal = req.body.categoryVal;
 
   const newCategory = new Category({
     categoryName,
+    categoryVal,
   });
 
   newCategory

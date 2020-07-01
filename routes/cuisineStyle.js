@@ -10,10 +10,12 @@ router.route("/").get((req, res) => {
 
 // post request (/cuisineStyle/add)
 router.route("/add").post((req, res) => {
-  const cuisineStyleName = req.body.cuisineStyleName;
+  const cuisineName = req.body.cuisineName;
+  const cuisineVal = req.body.cuisineVal;
 
   const newCuisineStyle = new CuisineStyle({
-    cuisineStyleName,
+    cuisineName,
+    cuisineVal,
   });
 
   newCuisineStyle
@@ -37,7 +39,8 @@ router.route("/:id").delete((req, res) => {
 router.route("/update/:id").post((req, res) => {
   CuisineStyle.findById(req.params.id)
     .then((cuisineStyle) => {
-      cuisineStyle.cuisineStyleName = req.body.cuisineStyleName;
+      cuisineStyle.cuisineName = req.body.cuisineName;
+      cuisineStyle.cuisineVal = req.body.cuisineVal;
 
       cuisineStyle
         .save()
