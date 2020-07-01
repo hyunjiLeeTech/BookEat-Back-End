@@ -23,6 +23,23 @@ router.route("/getrestaurantinfo").get((req, res) => {
   RestaurantOwner.findOne({ account: _id }).then((restOwner) => {
     Restaurant.findOne({ restaurantOwnerId: restOwner._id })
       .populate("addressId")
+      .populate("cuisineStyleId")
+      .populate("categoryId")
+      .populate("priceRangeId")
+      .populate("monOpenTimeId")
+      .populate("tueOpenTimeId")
+      .populate("wedOpenTimeId")
+      .populate("thuOpenTimeId")
+      .populate("friOpenTimeId")
+      .populate("satOpenTimeId")
+      .populate("sunOpenTimeId")
+      .populate("monCloseTimeId")
+      .populate("tueCloseTimeId")
+      .populate("wedCloseTimeId")
+      .populate("thuCloseTimeId")
+      .populate("friCloseTimeId")
+      .populate("satCloseTimeId")
+      .populate("sunCloseTimeId")
       .then((restaurant) => {
         console.log(restaurant);
         res.json(restaurant);
