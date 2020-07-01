@@ -4,7 +4,6 @@ const Schema = mongoose.Schema;
 const storeTimeSchema = new Schema({
   storeTimeVal: {
     type: String,
-    required: true,
     unique: true,
   },
   storeTimeName: {

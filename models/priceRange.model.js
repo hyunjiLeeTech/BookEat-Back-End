@@ -4,7 +4,6 @@ const Schema = mongoose.Schema;
 const priceRangeSchema = new Schema({
   priceRangeName: {
     type: String,
-    required: true,
     unique: true,
   },
   minPrice: { type: Number, required: true },
