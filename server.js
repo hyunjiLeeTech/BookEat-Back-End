@@ -10,6 +10,8 @@ const passport = require("./auth/passport-config");
 const jwt = require("jsonwebtoken");
 const app = express();
 const port = process.env.PORT || 5000;
+
+//database models
 let Customer = require("./models/customer.model");
 let Account = require("./models/account.model");
 let RestaurantOwner = require("./models/restaurantOwner.model");
@@ -49,6 +51,7 @@ const accountRouter = require("./routes/account");
 const restaurantRouter = require("./routes/restaurant");
 const addressRouter = require("./routes/address");
 const managerRouter = require("./routes/manager");
+const storeTimeRouter = require("./routes/storeTime");
 
 // app.use
 app.use(
@@ -69,6 +72,7 @@ app.use("/priceRange", priceRangeRouter);
 app.use("/account", accountRouter);
 app.use("/address", addressRouter);
 app.use("/manager", managerRouter);
+app.use("/storeTime", storeTimeRouter);
 
 app.get(
   "/logout",
