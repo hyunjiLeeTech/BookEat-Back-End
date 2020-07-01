@@ -59,7 +59,11 @@ app.use(
   passport.authenticate("jwt", { session: false }),
   customersRouter
 );
-app.use("/restaurant", restaurantRouter);
+app.use(
+  "/restaurant",
+  passport.authenticate("jwt", { session: false }),
+  restaurantRouter
+);
 app.use(
   "/restaurantOwners",
   passport.authenticate("jwt", { session: false }),

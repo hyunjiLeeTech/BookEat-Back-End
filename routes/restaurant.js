@@ -13,6 +13,58 @@ router.route("/").get((req, res) => {
     .catch((err) => res.status(400).json("Error: " + err));
 });
 
+router.route("/editresprofile").post((req, res) => {
+  var _id = "5efa8fc9dd9918ba08ac9ade";
+  //var _id = req.user._id;
+  var obj = {
+    resId: _id,
+    resName: req.body.resname,
+    phoneNumber: req.body.phonenumber,
+    businessNum: req.body.businessnumber,
+    description: req.body.description,
+
+    //open and close times
+    monOpenTime: req.body.monOpenTime,
+    tueOpenTime: req.body.tueOpenTime,
+    wedOpenTime: req.body.wedOpenTime,
+    thuOpenTime: req.body.thuOpenTime,
+    friOpenTime: req.body.friOpenTime,
+    satOpenTime: req.body.satOpenTime,
+    sunOpenTime: req.body.sunOpenTime,
+    monCloseTime: req.body.monCloseTime,
+    tueCloseTime: req.body.tueCloseTime,
+    wedCloseTime: req.body.wedCloseTime,
+    thuCloseTime: req.body.thuCloseTime,
+    friCloseTime: req.body.friCloseTime,
+    satCloseTime: req.body.satCloseTime,
+    sunCloseTime: req.body.sunCloseTime,
+
+    //address
+    province: req.body.province,
+    streetName: req.body.streetname,
+    streetNum: req.body.streetnumber,
+    postalCode: req.body.postalcode,
+    city: req.body.city,
+
+    //cuisine style
+    cuisineStyleVal: req.body.cuisineStyle,
+
+    //category
+    categVal: req.body.category,
+
+    //price range
+    priceName: req.body.priceRange,
+  };
+
+  editRestaurantProfile(obj)
+    .then(() => {
+      res.json({ errcode: 0, errmsg: "success" });
+    })
+    .catch((err) => {
+      res.json({ errcode: 1, errmsg: err });
+    });
+});
+
 //for testing
 router.route("/:id").get((req, res) => {
   Restaurant.findById(req.params.id)
