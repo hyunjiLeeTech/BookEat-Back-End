@@ -2,7 +2,12 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const cuisineStyleSchema = new Schema({
-  cuisineStyleName: {
+  cuisineVal: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  cuisineName: {
     type: String,
     required: true,
     unique: true,
