@@ -5,6 +5,7 @@ const CuisineStyle = require("../models/cuisineStyle.model");
 const Category = require("../models/category.model");
 const PriceRange = require("../models/priceRange.model");
 const StoreTime = require("../models/storeTime.model");
+const RestaurantOwner = require("../models/restaurantOwner.model");
 
 router.route("/").get((req, res) => {
   Restaurant.find()
@@ -14,10 +15,10 @@ router.route("/").get((req, res) => {
 });
 
 router.route("/editresprofile").post((req, res) => {
-  var _id = "5efa8fc9dd9918ba08ac9ade";
-  //var _id = req.user._id;
+  var _id = req.user._id;
+
   var obj = {
-    resId: _id,
+    accountId: _id,
     resName: req.body.resname,
     phoneNumber: req.body.phonenumber,
     businessNum: req.body.businessnumber,
@@ -106,7 +107,7 @@ router.route("/:id").post((req, res) => {
     thuOpenTime: req.body.thuOpenTime,
     friOpenTime: req.body.friOpenTime,
     satOpenTime: req.body.satOpenTime,
-    sunOpenTime: req.body.sunOpenTIme,
+    sunOpenTime: req.body.sunOpenTime,
     monCloseTime: req.body.monCloseTime,
     tueCloseTime: req.body.tueCloseTime,
     wedCloseTime: req.body.wedCloseTime,
@@ -142,7 +143,7 @@ router.route("/:id").post((req, res) => {
 });
 
 let editRestaurantProfile = async (obj) => {
-  let addrId, cuisineId, categoryId, priceRangeId;
+  let resOwnerId, resId, addrId, cuisineId, categoryId, priceRangeId;
   let monOpenId,
     tueOpenId,
     wedOpenId,
@@ -158,6 +159,16 @@ let editRestaurantProfile = async (obj) => {
     satCloseId,
     sunCloseId;
 
+  await RestaurantOwner.findOne({ account: obj.accountId }).then((resOwner) => {
+    resOwnerId = resOwner._id;
+  });
+
+  await Restaurant.findOne({ restaurantOwnerId: resOwnerId }).then(
+    (restaurant) => {
+      resId = restaurant._id;
+    }
+  );
+
   await CuisineStyle.findOne({ cuisineVal: obj.cuisineStyleVal }).then(
     (cuisineStyle) => {
       cuisineId = cuisineStyle._id;
@@ -171,7 +182,6 @@ let editRestaurantProfile = async (obj) => {
   await PriceRange.findOne({ priceRangeName: obj.priceName }).then(
     (priceRange) => {
       priceRangeId = priceRange._id;
-      console.log(priceRangeId);
     }
   );
 
@@ -181,11 +191,10 @@ let editRestaurantProfile = async (obj) => {
       monOpenId = storeTime._id;
     }
   );
-  console.log(obj.tueOpenTime);
+
   await StoreTime.findOne({ storeTimeVal: obj.tueOpenTime }).then(
     (storeTime) => {
       tueOpenId = storeTime._id;
-      console.log(tueOpenId);
     }
   );
 
@@ -261,32 +270,45 @@ let editRestaurantProfile = async (obj) => {
     }
   );
 
-  await Restaurant.findById(obj.resId).then((restaurant) => {
-    console.log(tueOpenId);
-    console.log(wedOpenId);
+  await Restaurant.findById(resId).then((restaurant) => {
     //restaurant info
     restaurant.resName = obj.resName;
-    restaurant.restaurantDescription = obj.description;
     restaurant.phoneNumber = obj.phoneNumber;
     restaurant.businessNum = obj.businessNum;
 
+    restaurant.restaurantDescription =
+      typeof obj.description != "undefined" ? obj.description : "";
+
     //open and close times
     restaurant.monOpenTimeId = monOpenId;
+
     restaurant.tueOpenTimeId = tueOpenId;
+
     restaurant.wedOpenTimeId = wedOpenId;
+
     restaurant.thuOpenTimeId = thuOpenId;
+
     restaurant.friOpenTimeId = friOpenId;
+
     restaurant.satOpenTimeId = satOpenId;
+
     restaurant.sunOpenTimeId = sunOpenId;
+
     restaurant.monCloseTimeId = monCloseId;
+
     restaurant.tueCloseTimeId = tueCloseId;
+
     restaurant.wedCloseTimeId = wedCloseId;
+
     restaurant.thuCloseTimeId = thuCloseId;
+
     restaurant.friCloseTimeId = friCloseId;
+
     restaurant.satCloseTimeId = satCloseId;
+
     restaurant.sunCloseTimeId = sunCloseId;
 
-    //cuisine style id
+    //cuisine style
     restaurant.cuisineStyleId = cuisineId;
 
     //category id
