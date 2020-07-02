@@ -53,6 +53,8 @@
     "http-errors": "1.7.2",
     "iconv-lite": "0.4.24",
     "jsonwebtoken": "^8.5.1",
+    "memory-cache": "^0.2.0",
+    "moment": "^2.27.0",
     "mongoose": "^5.9.20",
     "on-finished": "~2.3.0",
     "passport": "^0.4.1",
