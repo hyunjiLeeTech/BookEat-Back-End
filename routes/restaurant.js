@@ -126,17 +126,14 @@ router.route('/addTable').post(async (req, res) => {
 
 //TODO:  clean code, food items 
 router.route('/reserve').post(async (req, res) => {
-  if(req.user.userType !== 1){
-    res.json({errcode: 1, errmsg: "incorrect user type"})
-    return;
-  }
+
   var obj = {
     //resId: req.body.resId,
     numOfPeople: req.body.numOfPeople,
     dateTime: new Date(req.body.dateTime),
     tableId : req.body.tableId,
     comments : req.body.comments,
-    customerId: await findCustomerByAccount(req.user._id) //FIXME: for debugging!!!
+    customerId: '5efa8f53dd9918ba08ac9ada' //FIXME: for debugging!!!
   }
   console.log(obj);
   var eatingTime = 2;
@@ -190,10 +187,10 @@ router.route('/reservationsofpast14days').get(async (req, res)=>{
       res.json({errcode: 2, errmsg: 'restaurant not found'})
       return;
     }
-    var reservations = await Reservation.find({status: {$ne: 2}, restaurant: (await rest)._id, dateTime:{$gte: moment(new Date()).add(-14, 'd').toDate()}});
+    var reservations = await Reservation.find({status: {$ne: 2}, restaurant: (await rest)._id, dateTime:{$gte: moment(new Date()).add(-14, 'd').toDate()}}).populate('customer').populate('table');
     res.json({errcode:0, reservations: reservations});
   }else if(u.userType === 3){
-    var reservations = await Reservation.find({status: {$ne: 2}, restaurant: u.restaurantId, dateTime:{$gte: moment(new Date()).add(-14, 'd').toDate()}});
+    var reservations = await Reservation.find({status: {$ne: 2}, restaurant: u.restaurantId, dateTime:{$gte: moment(new Date()).add(-14, 'd').toDate()}}).populate('customer').populate('table');
 
     //.where('table.restaurant', u.restaurantId);
     console.log(reservations)
@@ -214,10 +211,10 @@ router.route('/upcomingreservations').get(async (req, res)=>{
       res.json({errcode: 2, errmsg: 'restaurant not found'})
       return;
     }
-    var reservations = await Reservation.find({status: 2, restaurant: (await rest)._id});
+    var reservations = await Reservation.find({status: 2, restaurant: (await rest)._id}).populate('customer').populate('table');
     res.json({errcode:0, reservations: reservations});
   }else if(u.userType === 3){
-    var reservations = await Reservation.find({status: 2, restaurant: u.restaurantId});
+    var reservations = await Reservation.find({status: 2, restaurant: u.restaurantId}).populate('customer').populate('table');
 
     //.where('table.restaurant', u.restaurantId);
     console.log(reservations)
