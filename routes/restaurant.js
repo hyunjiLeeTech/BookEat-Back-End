@@ -6,6 +6,180 @@ const Category = require("../models/category.model");
 const PriceRange = require("../models/priceRange.model");
 const StoreTime = require("../models/storeTime.model");
 const RestaurantOwner = require("../models/restaurantOwner.model");
+const Table = require("../models/table.model");
+const Reservation = require("../models/reservation.model");
+const cache = require('memory-cache')
+const moment =require('moment')
+
+class tableForClient{
+  constructor(table){
+    this._id = table._id;
+    this.status = table.status;
+    this.resId = table.restaurant;
+    this.rid = table.rid;
+    this.size = table.size;
+    this.prefers = '';
+    if(table.isQuite) this.prefers.concat("quite ");
+    if(table.isNearWindow) this.prefers.concat("window ");
+    this.isOpen = false;
+  }
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}   
+
+
+async function isTableAvaliableAtTime(table, datetime, eatingTime) {
+  //console.log(datetime);
+  var reservation = Reservation.find({
+    table: table, dateTime: {
+      $gte: moment(datetime).add(0-eatingTime, 'h').toDate(),
+      $lte: moment(datetime).add(eatingTime, 'h').toDate()
+    }
+  })
+  console.log((await reservation).length);
+  if ((await reservation).length > 0) 
+  {
+    console.log("err")
+    return false;
+  }
+  //console.log(moment(datetime).add(0-eatingTime, 'h').toDate());
+  //console.log(new Date(datetime))
+  return true;
+}
+
+router.route('/tableinfo').post(async (req, res) => {
+
+  
+  
+  var eatingTime = 2; //2 hours, TODO: this should refer restauraunt settings
+
+  var obj = {
+    resId: req.body.resId,
+    numOfPeople: req.body.numOfPeople,
+    dateTime: req.body.dateTime,
+  }
+  console.log(moment(obj.datetime).add(0-eatingTime, 'h').toDate())
+  console.log(moment(obj.datetime).add(eatingTime, 'h').toDate())
+
+  Reservation.find({
+    table: '5efd87a3b25d3554106046f5', dateTime: {
+      $gte: moment(obj.datetime).add(0-eatingTime, 'h').toDate(),
+      $lte: moment(obj.datetime).add(eatingTime, 'h').toDate()
+    }
+  }).then((re)=>{
+    console.log(re);
+  })
+  var rest = Restaurant.findOne({ _id: obj.resId });
+  var ts = [];
+  try {
+    ts = await Table.find({ restaurant:  (await rest)._id})
+  } catch (err) {
+    console.error(err)
+    throw err
+  }
+  var tables = [];
+  for(var i in ts){
+    tables.push(new tableForClient(ts[i]));
+  }
+  if (tables.length > 0) {
+    //console.log(tables);
+    for (var i in tables) { //checking number of people condition
+      if (tables[i].status) {
+        if (obj.numOfPeople <= 2 && tables[i].size <= 2) {
+          tables[i].isOpen = true;
+        } else if (obj.numOfPeople <= 4 && tables[i].size <= 4) {
+          tables[i].isOpen = true;
+        } else if (tables[i].size - obj.numOfPeople > 0 && tables[i].size - obj.numOfPeople < 3) {
+          tables[i].isOpen = true;
+        } else {
+          tables[i].isOpen = false;
+        }
+      }
+    }
+    for (var t of tables) {//checking time condition
+      if (t.isOpen) {
+        if (!(await isTableAvaliableAtTime(t, new Date(obj.dateTime), eatingTime))) {
+          t.isOpen = false;
+        }
+      }
+    }
+  }
+  res.json(tables)
+})
+
+//for testing purpose
+router.route('/addTable').post(async (req, res) => {
+  //res: 5efa8fc9dd9918ba08ac9ade
+  var ress = await Restaurant.find();
+  console.log(req.body.size)
+  var newTable = new Table({
+    restaurant: ress[0],
+    size: req.body.size,
+    isNearWindow: true,
+    isQuite: true,
+    status: true,
+  })
+  newTable.save().then(() => {
+    res.json({ errcode: 0 });
+  }).catch(err => {
+    console.error(err);
+    res.json({ errcode: 1 })
+  })
+})
+
+//THIS IS NOT SAFE!!!! RESERVATION CONFILECTION MAY OCCURE, NEED A SOLUTION
+router.route('/reserve').post(async (req, res) => {
+  var obj = {
+    //resId: req.body.resId,
+    numOfPeople: req.body.numOfPeople,
+    dateTime: new Date(req.body.dateTime),
+    tableId : req.body.tableId,
+    comments : req.body.comments,
+    customerId: '5efa8f53dd9918ba08ac9ada' //FIXME: for debugging!!!
+  }
+  console.log(obj);
+  var eatingTime = 2;
+  var table = await Table.findOne({_id: obj.tableId});
+  if(!table.status){
+    res.json({errcode: 1, errmsg: "Table closed"});
+  }
+  if(!await(isTableAvaliableAtTime(table, new Date(obj.dateTime), eatingTime))){
+    res.json({errcode: 3, errmsg: "Table is already reserved, please choose another table"});
+  }
+  if(cache.get(table._id) != null){
+    await sleep(3000);
+    if(cache.get(table._id) != null){
+      res.json({errcode: 2, errmsg: "Server busy"});
+    }
+  }
+  if(table.status){
+    console.log("Saving: " + table._id);
+    cache.put(table._id, "true", 30000);
+    var rev = new Reservation({
+      customer: obj.customerId, 
+      table: table._id,
+      dateTime: obj.dateTime.toString(),
+      numOfPeople: obj.numOfPeople,
+      comments: obj.comments,
+      reserveTime: new Date(),
+    })
+    //console.log(rev)
+    rev.save().then(()=>{
+      cache.del(table._id);
+      res.json({errcode: 0})
+    }
+    ).catch(err=>{
+      console.error(err)
+      cache.del(table._id);
+      res.json({errcode: 1})
+    })
+  }
+})
+
 
 router.route("/").get((req, res) => {
   Restaurant.find()
