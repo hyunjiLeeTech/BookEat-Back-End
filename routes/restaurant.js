@@ -19,8 +19,8 @@ class tableForClient{
     this.rid = table.rid;
     this.size = table.size;
     this.prefers = '';
-    if(table.isQuite) this.prefers.concat("quite ");
-    if(table.isNearWindow) this.prefers.concat("window ");
+    if(table.isQuite) this.prefers = this.prefers.concat("quite ");
+    if(table.isNearWindow) this.prefers = this.prefers.concat("window ");
     this.isOpen = false;
   }
 }
@@ -40,10 +40,8 @@ async function isTableAvaliableAtTime(table, datetime, eatingTime) {
       $lte: moment(datetime).add(eatingTime, 'h').toDate()
     }
   })
-  console.log((await reservation).length);
   if ((await reservation).length > 0) 
   {
-    console.log("err")
     return false;
   }
   //console.log(moment(datetime).add(0-eatingTime, 'h').toDate());
@@ -62,17 +60,6 @@ router.route('/tableinfo').post(async (req, res) => {
     numOfPeople: req.body.numOfPeople,
     dateTime: req.body.dateTime,
   }
-  console.log(moment(obj.datetime).add(0-eatingTime, 'h').toDate())
-  console.log(moment(obj.datetime).add(eatingTime, 'h').toDate())
-
-  Reservation.find({
-    table: '5efd87a3b25d3554106046f5', dateTime: {
-      $gte: moment(obj.datetime).add(0-eatingTime, 'h').toDate(),
-      $lte: moment(obj.datetime).add(eatingTime, 'h').toDate()
-    }
-  }).then((re)=>{
-    console.log(re);
-  })
   var rest = Restaurant.findOne({ _id: obj.resId });
   var ts = [];
   try {
@@ -146,14 +133,17 @@ router.route('/reserve').post(async (req, res) => {
   var table = await Table.findOne({_id: obj.tableId});
   if(!table.status){
     res.json({errcode: 1, errmsg: "Table closed"});
+    return;
   }
   if(!await(isTableAvaliableAtTime(table, new Date(obj.dateTime), eatingTime))){
     res.json({errcode: 3, errmsg: "Table is already reserved, please choose another table"});
+    return;
   }
   if(cache.get(table._id) != null){
     await sleep(3000);
     if(cache.get(table._id) != null){
       res.json({errcode: 2, errmsg: "Server busy"});
+      return;
     }
   }
   if(table.status){
