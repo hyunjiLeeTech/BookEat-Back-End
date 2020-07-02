@@ -1,7 +1,8 @@
 const router = require("express").Router();
 let Customer = require("../models/customer.model");
 let Account = require("../models/account.model");
-
+const Reservation = require("../models/reservation.model");
+const moment = require('moment')
 let findAccountByEmailAsyc = async function (email) {
   return await Account.find({ email: email });
 };
@@ -9,6 +10,10 @@ let findAccountByEmailAsyc = async function (email) {
 let findCustomerByPhoneNumberAsync = async function (phonenumber) {
   return await Customer.find({ phoneNumber: phonenumber });
 };
+
+let findCustomerByAccount = async function(acc){
+  return await Customer.findOne({account: acc})
+}
 
 let addCustomerAsync = async function (obj) {
   const regExpEmail = RegExp(/^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[A-Za-z]+$/);
@@ -64,6 +69,23 @@ let addCustomerAsync = async function (obj) {
 
   return await newCustomer.save();
 };
+
+router.route("/reservationsofpast60days").get(async (req, res)=>{
+  var u = req.user;
+  //console.log(u);
+  try{
+    var reservations = await Reservation.find({customer: await findCustomerByAccount(u)});
+    res.json({errcode: 0, reservations: reservations})
+  }catch(err){
+    console.error(err);
+    res.json({errcode: 1, errmsg: "internal error"})
+  }
+})
+
+//TODO: cancel reservation by customer
+router.route("/cancelreservation").post((req, res)=>{
+
+})
 
 //
 //get request (/customers)

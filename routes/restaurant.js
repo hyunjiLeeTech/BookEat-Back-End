@@ -10,13 +10,16 @@ const Table = require("../models/table.model");
 const Reservation = require("../models/reservation.model");
 const cache = require('memory-cache')
 const moment =require('moment')
+let findCustomerByAccount = async function(acc){
+  return await Customer.findOne({account: acc})
+}
 
 class tableForClient{
   constructor(table){
     this._id = table._id;
     this.status = table.status;
     this.resId = table.restaurant;
-    this.rid = table.rid;
+    this.rtid = table.rid;
     this.size = table.size;
     this.prefers = '';
     if(table.isQuite) this.prefers = this.prefers.concat("quite ");
@@ -49,10 +52,13 @@ async function isTableAvaliableAtTime(table, datetime, eatingTime) {
   return true;
 }
 
-router.route('/tableinfo').post(async (req, res) => {
+//TODO: Cancel reservation by restaurant
+router.route('/cancelreservation').post(async (req, res)=>{
 
-  
-  
+})
+
+//TODO: clean code
+router.route('/tableinfo').post(async (req, res) => {
   var eatingTime = 2; //2 hours, TODO: this should refer restauraunt settings
 
   var obj = {
@@ -95,7 +101,7 @@ router.route('/tableinfo').post(async (req, res) => {
       }
     }
   }
-  res.json(tables)
+  res.json({errcode:0, tables: tables})
 })
 
 //for testing purpose
@@ -104,7 +110,7 @@ router.route('/addTable').post(async (req, res) => {
   var ress = await Restaurant.find();
   console.log(req.body.size)
   var newTable = new Table({
-    restaurant: ress[0],
+    restaurant: ress[1],
     size: req.body.size,
     isNearWindow: true,
     isQuite: true,
@@ -118,15 +124,19 @@ router.route('/addTable').post(async (req, res) => {
   })
 })
 
-//THIS IS NOT SAFE!!!! RESERVATION CONFILECTION MAY OCCURE, NEED A SOLUTION
+//TODO:  clean code, food items 
 router.route('/reserve').post(async (req, res) => {
+  if(req.user.userType !== 1){
+    res.json({errcode: 1, errmsg: "incorrect user type"})
+    return;
+  }
   var obj = {
     //resId: req.body.resId,
     numOfPeople: req.body.numOfPeople,
     dateTime: new Date(req.body.dateTime),
     tableId : req.body.tableId,
     comments : req.body.comments,
-    customerId: '5efa8f53dd9918ba08ac9ada' //FIXME: for debugging!!!
+    customerId: await findCustomerByAccount(req.user._id) //FIXME: for debugging!!!
   }
   console.log(obj);
   var eatingTime = 2;
@@ -156,6 +166,8 @@ router.route('/reserve').post(async (req, res) => {
       numOfPeople: obj.numOfPeople,
       comments: obj.comments,
       reserveTime: new Date(),
+      restaurant: table.restaurant,
+      status: 2,//0 finished, 1 not attend, 2 upcoming, 3 user cancelled, 4 restaurant cancelled.
     })
     //console.log(rev)
     rev.save().then(()=>{
@@ -169,6 +181,54 @@ router.route('/reserve').post(async (req, res) => {
     })
   }
 })
+
+router.route('/reservationsofpast14days').get(async (req, res)=>{
+  var u = {_id: '5efa8fe8dd9918ba08ac9ae0', userType: 3, restaurantId: '5efa939fdd9918ba08ac9ae4'}//FIXME: for debug restaurant maanger
+  if(u.userType === 2){
+    var rest = Restaurant.findOne({restaurantOwnerId: u._id});
+    if(rest === null) {
+      res.json({errcode: 2, errmsg: 'restaurant not found'})
+      return;
+    }
+    var reservations = await Reservation.find({status: {$ne: 2}, restaurant: (await rest)._id, dateTime:{$gte: moment(new Date()).add(-14, 'd').toDate()}});
+    res.json({errcode:0, reservations: reservations});
+  }else if(u.userType === 3){
+    var reservations = await Reservation.find({status: {$ne: 2}, restaurant: u.restaurantId, dateTime:{$gte: moment(new Date()).add(-14, 'd').toDate()}});
+
+    //.where('table.restaurant', u.restaurantId);
+    console.log(reservations)
+    res.json({errcode:0, reservations: reservations});
+  }else{
+    res.status(401).json({errcode: 1, errmsg: 'permission denied'})
+  }
+})
+
+//for restaurant management
+router.route('/upcomingreservations').get(async (req, res)=>{
+  //var u = req.user;
+  //var u = {_id: '5efa8fc9dd9918ba08ac9add', userType: 2}//FIXME: for debug restaurant owner 
+  var u = {_id: '5efa8fe8dd9918ba08ac9ae0', userType: 3, restaurantId: '5efa8fc9dd9918ba08ac9ade'}//FIXME: for debug restaurant maanger
+  if(u.userType === 2){
+    var rest = Restaurant.findOne({restaurantOwnerId: u._id});
+    if(rest === null) {
+      res.json({errcode: 2, errmsg: 'restaurant not found'})
+      return;
+    }
+    var reservations = await Reservation.find({status: 2, restaurant: (await rest)._id});
+    res.json({errcode:0, reservations: reservations});
+  }else if(u.userType === 3){
+    var reservations = await Reservation.find({status: 2, restaurant: u.restaurantId});
+
+    //.where('table.restaurant', u.restaurantId);
+    console.log(reservations)
+    res.json({errcode:0, reservations: reservations});
+  }else{
+    res.status(401).json({errcode: 1, errmsg: 'permission denied'})
+  }
+})  
+
+
+
 
 
 router.route("/").get((req, res) => {
