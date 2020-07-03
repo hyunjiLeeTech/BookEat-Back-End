@@ -168,9 +168,10 @@ router.route('/reserve').post(async (req, res) => {
       status: 2,//0 finished, 1 not attend, 2 upcoming, 3 user cancelled, 4 restaurant cancelled.
     })
     //console.log(rev)
-    rev.save().then(()=>{
+    rev.save().then(async (revs)=>{
       cache.del(table._id);
-      res.json({errcode: 0})
+      var popedRevs = await revs.populate("customer").populate("restaurant").execPopulate();
+      res.json({errcode: 0, reservation: popedRevs})
     }
     ).catch(err=>{
       console.error(err)
@@ -181,7 +182,7 @@ router.route('/reserve').post(async (req, res) => {
 })
 
 router.route('/reservationsofpast14days').get(async (req, res)=>{
-  var u = {_id: '5efa8fe8dd9918ba08ac9ae0', userType: 3, restaurantId: '5efa939fdd9918ba08ac9ae4'}//FIXME: for debug restaurant maanger
+  var u = {_id: '5efa8fe8dd9918ba08ac9ae0', userType: 3, restaurantId: '5efa8fc9dd9918ba08ac9ade'}//FIXME: for debug restaurant maanger
   if(u.userType === 2){
     var rest = Restaurant.findOne({restaurantOwnerId: u._id});
     if(rest === null) {
@@ -192,11 +193,11 @@ router.route('/reservationsofpast14days').get(async (req, res)=>{
     res.json({errcode:0, reservations: reservations});
   }else if(u.userType === 3){
     var reservations = await Reservation.find({status: {$ne: 2}, restaurant: u.restaurantId, dateTime:{$gte: moment(new Date()).add(-14, 'd').toDate()}}).populate('customer').populate('table');
-
     //.where('table.restaurant', u.restaurantId);
     console.log(reservations)
     res.json({errcode:0, reservations: reservations});
   }else{
+    console.log(401)
     res.status(401).json({errcode: 1, errmsg: 'permission denied'})
   }
 })
