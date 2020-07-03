@@ -66,6 +66,7 @@ router.route('/tableinfo').post(async (req, res) => {
     numOfPeople: req.body.numOfPeople,
     dateTime: req.body.dateTime,
   }
+  console.log(obj);
   var rest = Restaurant.findOne({ _id: obj.resId });
   var ts = [];
   try {
