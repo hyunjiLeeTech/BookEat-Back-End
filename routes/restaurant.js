@@ -9,7 +9,8 @@ const RestaurantOwner = require("../models/restaurantOwner.model");
 const Table = require("../models/table.model");
 const Reservation = require("../models/reservation.model");
 const cache = require('memory-cache')
-const moment = require('moment')
+const moment = require('moment');
+const Customer = require("../models/customer.model");
 let findCustomerByAccount = async function (acc) {
   return await Customer.findOne({ account: acc })
 }
@@ -165,7 +166,7 @@ router.route('/reserve').post(async (req, res) => {
     dateTime: new Date(req.body.dateTime),
     tableId: req.body.tableId,
     comments: req.body.comments,
-    customerId: req.user._id //FIXME: for debugging!!!
+    customerId: await findCustomerByAccount(req.user._id) //FIXME: for debugging!!!
   }
   console.log(obj);
   var eatingTime = 2;
