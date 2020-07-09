@@ -9,21 +9,21 @@ const RestaurantOwner = require("../models/restaurantOwner.model");
 const Table = require("../models/table.model");
 const Reservation = require("../models/reservation.model");
 const cache = require('memory-cache')
-const moment =require('moment')
-let findCustomerByAccount = async function(acc){
-  return await Customer.findOne({account: acc})
+const moment = require('moment')
+let findCustomerByAccount = async function (acc) {
+  return await Customer.findOne({ account: acc })
 }
 
-class tableForClient{
-  constructor(table){
+class tableForClient {
+  constructor(table) {
     this._id = table._id;
     this.status = table.status;
     this.resId = table.restaurant;
     this.rtid = table.rid;
     this.size = table.size;
     this.prefers = '';
-    if(table.isQuite) this.prefers = this.prefers.concat("quite ");
-    if(table.isNearWindow) this.prefers = this.prefers.concat("window ");
+    if (table.isQuite) this.prefers = this.prefers.concat("quite ");
+    if (table.isNearWindow) this.prefers = this.prefers.concat("window ");
     this.isOpen = false;
   }
 }
@@ -32,19 +32,23 @@ function sleep(ms) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
-}   
+}
 
+async function getReservationByIdAsync(id) {
+  return await Reservation.findOne({ _id: id });
+}
 
 async function isTableAvaliableAtTime(table, datetime, eatingTime) {
   //console.log(datetime);
   var reservation = Reservation.find({
-    table: table, dateTime: {
-      $gte: moment(datetime).add(0-eatingTime, 'h').toDate(),
+    table: table,
+    status: 2,
+    dateTime: {
+      $gte: moment(datetime).add(0 - eatingTime, 'h').toDate(),
       $lte: moment(datetime).add(eatingTime, 'h').toDate()
     }
   })
-  if ((await reservation).length > 0) 
-  {
+  if ((await reservation).length > 0) {
     return false;
   }
   //console.log(moment(datetime).add(0-eatingTime, 'h').toDate());
@@ -52,10 +56,6 @@ async function isTableAvaliableAtTime(table, datetime, eatingTime) {
   return true;
 }
 
-//TODO: Cancel reservation by restaurant
-router.route('/cancelreservation').post(async (req, res)=>{
-
-})
 
 //TODO: clean code
 router.route('/tableinfo').post(async (req, res) => {
@@ -70,13 +70,13 @@ router.route('/tableinfo').post(async (req, res) => {
   var rest = Restaurant.findOne({ _id: obj.resId });
   var ts = [];
   try {
-    ts = await Table.find({ restaurant:  (await rest)._id})
+    ts = await Table.find({ restaurant: (await rest)._id })
   } catch (err) {
     console.error(err)
     throw err
   }
   var tables = [];
-  for(var i in ts){
+  for (var i in ts) {
     tables.push(new tableForClient(ts[i]));
   }
   if (tables.length > 0) {
@@ -102,7 +102,7 @@ router.route('/tableinfo').post(async (req, res) => {
       }
     }
   }
-  res.json({errcode:0, tables: tables})
+  res.json({ errcode: 0, tables: tables })
 })
 
 //for testing purpose
@@ -124,6 +124,37 @@ router.route('/addTable').post(async (req, res) => {
     res.json({ errcode: 1 })
   })
 })
+//TODO: string
+router.route("/cancelreservation").post(async (req, res) => {
+  try {
+    var reservation = await getReservationByIdAsync(req.body.reservationId);
+    reservation.status = 4;
+    reservation.save().then(() => {
+      res.json({ errcode: 0, errmsg: "success" })
+    }).catch(err => {
+      res.json({ errcode: 1, errmsg: err })
+    })
+  } catch (err) {
+    console.log(err);
+    res.status(500).send("internal error")
+  }
+})
+
+//TODO: testing
+router.route("/confirmattendence").post(async (req, res) => {
+  try {
+    var reservation = await getReservationByIdAsync(req.body.reservationId);
+    reservation.status = 0;
+    reservation.save().then(() => {
+      res.json({ errcode: 0, errmsg: "success" })
+    }).catch(err => {
+      res.json({ errcode: 1, errmsg: err })
+    })
+  } catch (err) {
+    console.log(err);
+    res.status(500).send("internal error")
+  }
+})
 
 //TODO:  clean code, food items 
 router.route('/reserve').post(async (req, res) => {
@@ -132,33 +163,33 @@ router.route('/reserve').post(async (req, res) => {
     //resId: req.body.resId,
     numOfPeople: req.body.numOfPeople,
     dateTime: new Date(req.body.dateTime),
-    tableId : req.body.tableId,
-    comments : req.body.comments,
+    tableId: req.body.tableId,
+    comments: req.body.comments,
     customerId: '5efa8f53dd9918ba08ac9ada' //FIXME: for debugging!!!
   }
   console.log(obj);
   var eatingTime = 2;
-  var table = await Table.findOne({_id: obj.tableId});
-  if(!table.status){
-    res.json({errcode: 1, errmsg: "Table closed"});
+  var table = await Table.findOne({ _id: obj.tableId });
+  if (!table.status) {
+    res.json({ errcode: 1, errmsg: "Table closed" });
     return;
   }
-  if(!await(isTableAvaliableAtTime(table, new Date(obj.dateTime), eatingTime))){
-    res.json({errcode: 3, errmsg: "Table is already reserved, please choose another table"});
+  if (!await (isTableAvaliableAtTime(table, new Date(obj.dateTime), eatingTime))) {
+    res.json({ errcode: 3, errmsg: "Table is already reserved, please choose another table" });
     return;
   }
-  if(cache.get(table._id) != null){
+  if (cache.get(table._id) != null) {
     await sleep(3000);
-    if(cache.get(table._id) != null){
-      res.json({errcode: 2, errmsg: "Server busy"});
+    if (cache.get(table._id) != null) {
+      res.json({ errcode: 2, errmsg: "Server busy" });
       return;
     }
   }
-  if(table.status){
+  if (table.status) {
     console.log("Saving: " + table._id);
     cache.put(table._id, "true", 30000);
     var rev = new Reservation({
-      customer: obj.customerId, 
+      customer: obj.customerId,
       table: table._id,
       dateTime: obj.dateTime.toString(),
       numOfPeople: obj.numOfPeople,
@@ -168,63 +199,63 @@ router.route('/reserve').post(async (req, res) => {
       status: 2,//0 finished, 1 not attend, 2 upcoming, 3 user cancelled, 4 restaurant cancelled.
     })
     //console.log(rev)
-    rev.save().then(async (revs)=>{
+    rev.save().then(async (revs) => {
       cache.del(table._id);
       var popedRevs = await revs.populate("customer").populate("restaurant").execPopulate();
-      res.json({errcode: 0, reservation: popedRevs})
+      res.json({ errcode: 0, reservation: popedRevs })
     }
-    ).catch(err=>{
+    ).catch(err => {
       console.error(err)
       cache.del(table._id);
-      res.json({errcode: 1})
+      res.json({ errcode: 1 })
     })
   }
 })
 
-router.route('/reservationsofpast14days').get(async (req, res)=>{
-  var u = {_id: '5efa8fe8dd9918ba08ac9ae0', userType: 3, restaurantId: '5efa8fc9dd9918ba08ac9ade'}//FIXME: for debug restaurant maanger
-  if(u.userType === 2){
-    var rest = Restaurant.findOne({restaurantOwnerId: u._id});
-    if(rest === null) {
-      res.json({errcode: 2, errmsg: 'restaurant not found'})
+router.route('/reservationsofpast14days').get(async (req, res) => {
+  var u = { _id: '5efa8fe8dd9918ba08ac9ae0', userType: 3, restaurantId: '5efa8fc9dd9918ba08ac9ade' }//FIXME: for debug restaurant maanger
+  if (u.userType === 2) {
+    var rest = Restaurant.findOne({ restaurantOwnerId: u._id });
+    if (rest === null) {
+      res.json({ errcode: 2, errmsg: 'restaurant not found' })
       return;
     }
-    var reservations = await Reservation.find({status: {$ne: 2}, restaurant: (await rest)._id, dateTime:{$gte: moment(new Date()).add(-14, 'd').toDate()}}).populate('customer').populate('table');
-    res.json({errcode:0, reservations: reservations});
-  }else if(u.userType === 3){
-    var reservations = await Reservation.find({status: {$ne: 2}, restaurant: u.restaurantId, dateTime:{$gte: moment(new Date()).add(-14, 'd').toDate()}}).populate('customer').populate('table');
+    var reservations = await Reservation.find({ status: { $ne: 2 }, restaurant: (await rest)._id, dateTime: { $gte: moment(new Date()).add(-14, 'd').toDate() } }).populate('customer').populate('table');
+    res.json({ errcode: 0, reservations: reservations });
+  } else if (u.userType === 3) {
+    var reservations = await Reservation.find({ status: { $ne: 2 }, restaurant: u.restaurantId, dateTime: { $gte: moment(new Date()).add(-14, 'd').toDate() } }).populate('customer').populate('table');
     //.where('table.restaurant', u.restaurantId);
     console.log(reservations)
-    res.json({errcode:0, reservations: reservations});
-  }else{
+    res.json({ errcode: 0, reservations: reservations });
+  } else {
     console.log(401)
-    res.status(401).json({errcode: 1, errmsg: 'permission denied'})
+    res.status(401).json({ errcode: 1, errmsg: 'permission denied' })
   }
 })
 
 //for restaurant management
-router.route('/upcomingreservations').get(async (req, res)=>{
+router.route('/upcomingreservations').get(async (req, res) => {
   //var u = req.user;
   //var u = {_id: '5efa8fc9dd9918ba08ac9add', userType: 2}//FIXME: for debug restaurant owner 
-  var u = {_id: '5efa8fe8dd9918ba08ac9ae0', userType: 3, restaurantId: '5efa8fc9dd9918ba08ac9ade'}//FIXME: for debug restaurant maanger
-  if(u.userType === 2){
-    var rest = Restaurant.findOne({restaurantOwnerId: u._id});
-    if(rest === null) {
-      res.json({errcode: 2, errmsg: 'restaurant not found'})
+  var u = { _id: '5efa8fe8dd9918ba08ac9ae0', userType: 3, restaurantId: '5efa8fc9dd9918ba08ac9ade' }//FIXME: for debug restaurant maanger
+  if (u.userType === 2) {
+    var rest = Restaurant.findOne({ restaurantOwnerId: u._id });
+    if (rest === null) {
+      res.json({ errcode: 2, errmsg: 'restaurant not found' })
       return;
     }
-    var reservations = await Reservation.find({status: 2, restaurant: (await rest)._id}).populate('customer').populate('table');
-    res.json({errcode:0, reservations: reservations});
-  }else if(u.userType === 3){
-    var reservations = await Reservation.find({status: 2, restaurant: u.restaurantId}).populate('customer').populate('table');
+    var reservations = await Reservation.find({ status: 2, restaurant: (await rest)._id }).populate('customer').populate('table');
+    res.json({ errcode: 0, reservations: reservations });
+  } else if (u.userType === 3) {
+    var reservations = await Reservation.find({ status: 2, restaurant: u.restaurantId }).populate('customer').populate('table');
 
     //.where('table.restaurant', u.restaurantId);
     console.log(reservations)
-    res.json({errcode:0, reservations: reservations});
-  }else{
-    res.status(401).json({errcode: 1, errmsg: 'permission denied'})
+    res.json({ errcode: 0, reservations: reservations });
+  } else {
+    res.status(401).json({ errcode: 1, errmsg: 'permission denied' })
   }
-})  
+})
 
 
 

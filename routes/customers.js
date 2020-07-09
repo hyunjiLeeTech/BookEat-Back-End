@@ -70,6 +70,28 @@ let addCustomerAsync = async function (obj) {
   return await newCustomer.save();
 };
 
+async function getAccountByIdAsync(id){
+  return await Account.findOne({_id: id});
+}
+
+//TODO: testing
+router.route("/cancelreservation").post(async (req, res) => {
+  try {
+    var reservation = await getReservationByIdAsync(req.body.reservationId);
+    reservation.status = 3;
+    reservation.save().then(() => {
+      res.json({ errcode: 0, errmsg: "success" })
+    }).catch(err => {
+      res.json({ errcode: 1, errmsg: err })
+    })
+  } catch (err) {
+    console.log(err);
+    res.status(500).send("internal error")
+  }
+})
+
+
+
 router.route("/reservationsofpast60days").get(async (req, res)=>{
   var u = req.user;
   //console.log(u);
