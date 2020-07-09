@@ -2,6 +2,11 @@ const router = require("express").Router();
 let Customer = require("../models/customer.model");
 let Account = require("../models/account.model");
 
+async function getReservationByIdAsync(id) {
+  return await Reservation.findOne({ _id: id });
+}
+
+
 router.route("/").get((req, res) => {
   Account.find()
     .then((account) => res.json(account))
@@ -26,6 +31,22 @@ router.route("/add").post((req, res) => {
     })
     .catch((err) => res.status(400).json("Error: " + err));
 });
+
+router.post("/resetpassword", authMiddleware, async (req, res, next)=>{
+  try{
+    var account = await getAccountByIdAsync(req.user._id);
+    account.password = res.body.newPassword;
+    account.save().then(()=>{
+      res.json({errcode: 0, errmsg: 'success'});
+    }).catch(err => {
+      res.json({errcode: 1, errmsg: err});
+    })
+  } catch(err){
+    res.status(500).send('internal error')
+  }
+})
+
+
 
 router.route("/:id").get((req, res) => {
   Account.findById(req.params.id)
@@ -52,5 +73,10 @@ router.route("/update/:id").post((req, res) => {
     })
     .catch((err) => res.status(400).json("error: " + err));
 });
+
+function authMiddleware(req, res, next){
+  if(req.isAuthenticated()) return next();
+  res.status(401).send("Login required");
+}
 
 module.exports = router;
