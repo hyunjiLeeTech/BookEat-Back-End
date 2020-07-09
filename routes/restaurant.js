@@ -57,7 +57,7 @@ async function isTableAvaliableAtTime(table, datetime, eatingTime) {
 }
 
 
-//TODO: clean code
+//TODO: clean code, security update
 router.route('/tableinfo').post(async (req, res) => {
   var eatingTime = 2; //2 hours, TODO: this should refer restauraunt settings
 
@@ -124,7 +124,7 @@ router.route('/addTable').post(async (req, res) => {
     res.json({ errcode: 1 })
   })
 })
-//TODO: string
+//TODO: testing, securty test
 router.route("/cancelreservation").post(async (req, res) => {
   try {
     var reservation = await getReservationByIdAsync(req.body.reservationId);
@@ -140,7 +140,7 @@ router.route("/cancelreservation").post(async (req, res) => {
   }
 })
 
-//TODO: testing
+//TODO: testing, security test
 router.route("/confirmattendence").post(async (req, res) => {
   try {
     var reservation = await getReservationByIdAsync(req.body.reservationId);
@@ -165,7 +165,7 @@ router.route('/reserve').post(async (req, res) => {
     dateTime: new Date(req.body.dateTime),
     tableId: req.body.tableId,
     comments: req.body.comments,
-    customerId: '5efa8f53dd9918ba08ac9ada' //FIXME: for debugging!!!
+    customerId: req.user._id //FIXME: for debugging!!!
   }
   console.log(obj);
   var eatingTime = 2;
