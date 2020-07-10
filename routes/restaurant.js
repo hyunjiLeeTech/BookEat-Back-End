@@ -351,8 +351,60 @@ let editRestaurantProfile = async (obj) => {
     satCloseId,
     sunCloseId;
 
+  //regular expression for validation
+  const regExpPhone = RegExp(
+    /^\(?([0-9]{3})\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$/
+  );
+  const regExpPostal = RegExp(/^\d{5}-\d{4}|\d{5}|[A-Z]\d[A-Z] \d[A-Z]\d$/);
+  const regExpNumbers = RegExp(/^[0-9]+$/);
+  const regExpBusinessNumber = RegExp(/^\d{9}$/);
+
+  //restaurant basic info validation
+  let message = "";
+
+  if (obj.resName.length < 3) {
+    message = "Restaurant Name: At lesat 3 characters are required";
+    throw message;
+  }
+
+  if (!regExpPhone.test(obj.phoneNumber)) {
+    message = "Incorrect phone number";
+    throw message;
+  }
+
+  if (!regExpBusinessNumber.test(obj.businessNum)) {
+    message = "Incorrect Business Number";
+    throw message;
+  }
+
+  //address validation
+  if (!regExpPostal.test(obj.postalCode)) {
+    message = "Incorrect postal code";
+    throw message;
+  }
+
+  if (!regExpNumbers.test(obj.streetNum)) {
+    message = "Street Number: At least 1 number required";
+    throw message;
+  }
+
+  if (obj.streetName.length < 4) {
+    message = "Street Name: At least 4 characters are required";
+    throw message;
+  }
+
+  if (obj.province.length < 2) {
+    message = "Province: At lesat 2 characters are required";
+    throw message;
+  }
+
+  if (obj.city.length < 1) {
+    message = "City: Please write the city";
+    throw message;
+  }
+
+  // for status whether 1 or 2
   if (
-    typeof obj.description == "undefined" ||
     obj.monOpenTime == "" ||
     obj.tueOpenTime == "" ||
     obj.wedOpenTime == "" ||
