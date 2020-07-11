@@ -11,8 +11,18 @@ const Reservation = require("../models/reservation.model");
 const cache = require('memory-cache')
 const moment = require('moment');
 const Customer = require("../models/customer.model");
-let findCustomerByAccount = async function (acc) {
+const Manager = require("../models/manager.model")
+let findCustomerByAccountAsync = async function (acc) {
   return await Customer.findOne({ account: acc })
+}
+
+async function findRestaurantOwnerByAccountAsync(acc){
+  return await RestaurantOwner.findOne({account: acc});
+}
+
+async function findManagerByAccountWithRestaurntAsync(acc){
+  var tr = await Manager.findOne({accountId: acc}).populate("restaurantId");
+  return tr
 }
 
 class tableForClient {
@@ -58,6 +68,13 @@ async function isTableAvaliableAtTime(table, datetime, eatingTime) {
 }
 
 
+router.post('/getRestaurantOwnerAndManagerViaRestaurantId', async (req, res)=>{
+  console.log("IN")
+  var ro = await (await Restaurant.findOne({_id: req.body.restaurantId}).populate("restaurantOwnerId")).restaurantOwnerId.populate("account").execPopulate();
+  var rm = await Manager.find({restaurantId: req.body.restaurantId}).populate("accountId");
+  res.json({Owner: ro, Managers: rm})
+})
+
 //TODO: clean code, security update
 router.route('/tableinfo').post(async (req, res) => {
   var eatingTime = 2; //2 hours, TODO: this should refer restauraunt settings
@@ -93,6 +110,8 @@ router.route('/tableinfo').post(async (req, res) => {
         } else {
           tables[i].isOpen = false;
         }
+      }else{
+        tables[i].isOpen = false;
       }
     }
     for (var t of tables) {//checking time condition
@@ -157,7 +176,7 @@ router.route("/confirmattendence").post(async (req, res) => {
   }
 })
 
-//TODO:  clean code, food items 
+//TODO:  clean code, food items
 router.route('/reserve').post(async (req, res) => {
 
   var obj = {
@@ -166,10 +185,15 @@ router.route('/reserve').post(async (req, res) => {
     dateTime: new Date(req.body.dateTime),
     tableId: req.body.tableId,
     comments: req.body.comments,
-    customerId: await findCustomerByAccount(req.user._id) //FIXME: for debugging!!!
+    customerId: await findCustomerByAccountAsync(req.user._id)
   }
-  console.log(obj);
-  var eatingTime = 2;
+  
+  if(obj.customerId === null){
+    res.json({errcode: 4, errmsg: "Customer not found"});
+    return;
+  }
+
+  var eatingTime = 2; //TODO: get eating time from restaruant database
   var table = await Table.findOne({ _id: obj.tableId });
   if (!table.status) {
     res.json({ errcode: 1, errmsg: "Table closed" });
@@ -199,7 +223,6 @@ router.route('/reserve').post(async (req, res) => {
       restaurant: table.restaurant,
       status: 2,//0 finished, 1 not attend, 2 upcoming, 3 user cancelled, 4 restaurant cancelled.
     })
-    //console.log(rev)
     rev.save().then(async (revs) => {
       cache.del(table._id);
       var popedRevs = await revs.populate("customer").populate("restaurant").execPopulate();
@@ -213,10 +236,13 @@ router.route('/reserve').post(async (req, res) => {
   }
 })
 
+//TODO: Finish code, reservation update
 router.route('/reservationsofpast14days').get(async (req, res) => {
-  var u = { _id: '5efa8fe8dd9918ba08ac9ae0', userType: 3, restaurantId: '5efa8fc9dd9918ba08ac9ade' }//FIXME: for debug restaurant maanger
+  //var u = { _id: '5efa8fe8dd9918ba08ac9ae0', userType: 3, restaurantId: '5efa8fc9dd9918ba08ac9ade' }//FIXME: for debug restaurant maanger
+  var u = req.user;
   if (u.userType === 2) {
-    var rest = Restaurant.findOne({ restaurantOwnerId: u._id });
+    var rest = Restaurant.findOne({ restaurantOwnerId: await findRestaurantOwnerByAccountAsync(u) });
+    //console.log(rest)
     if (rest === null) {
       res.json({ errcode: 2, errmsg: 'restaurant not found' })
       return;
@@ -224,9 +250,15 @@ router.route('/reservationsofpast14days').get(async (req, res) => {
     var reservations = await Reservation.find({ status: { $ne: 2 }, restaurant: (await rest)._id, dateTime: { $gte: moment(new Date()).add(-14, 'd').toDate() } }).populate('customer').populate('table');
     res.json({ errcode: 0, reservations: reservations });
   } else if (u.userType === 3) {
-    var reservations = await Reservation.find({ status: { $ne: 2 }, restaurant: u.restaurantId, dateTime: { $gte: moment(new Date()).add(-14, 'd').toDate() } }).populate('customer').populate('table');
+    var rest = (await findManagerByAccountWithRestaurntAsync(u)).restaurantId;
+    //console.log(rest)
+    if (rest === null) {
+      res.json({ errcode: 2, errmsg: 'restaurant not found' })
+      return;
+    }
+    var reservations = await Reservation.find({ status: { $ne: 2 }, restaurant: rest, dateTime: { $gte: moment(new Date()).add(-14, 'd').toDate() } }).populate('customer').populate('table');
     //.where('table.restaurant', u.restaurantId);
-    console.log(reservations)
+    //console.log(reservations)
     res.json({ errcode: 0, reservations: reservations });
   } else {
     console.log(401)
@@ -238,22 +270,31 @@ router.route('/reservationsofpast14days').get(async (req, res) => {
 router.route('/upcomingreservations').get(async (req, res) => {
   //var u = req.user;
   //var u = {_id: '5efa8fc9dd9918ba08ac9add', userType: 2}//FIXME: for debug restaurant owner 
-  var u = { _id: '5efa8fe8dd9918ba08ac9ae0', userType: 3, restaurantId: '5efa8fc9dd9918ba08ac9ade' }//FIXME: for debug restaurant maanger
-  if (u.userType === 2) {
-    var rest = Restaurant.findOne({ restaurantOwnerId: u._id });
+  //var u = { _id: '5efa8fe8dd9918ba08ac9ae0', userType: 3, restaurantId: '5efa8fc9dd9918ba08ac9ade' }//FIXME: for debug restaurant maanger
+  var u = req.user;
+  //console.log(u)
+
+  if (u.userTypeId === 2) {
+    var rest = Restaurant.findOne({ restaurantOwnerId: await findRestaurantOwnerByAccountAsync(u) });
+    console.log(await findRestaurantOwnerByAccountAsync(u))
     if (rest === null) {
       res.json({ errcode: 2, errmsg: 'restaurant not found' })
       return;
     }
-    var reservations = await Reservation.find({ status: 2, restaurant: (await rest)._id }).populate('customer').populate('table');
+    var reservations = await Reservation.find({ status: 2, restaurant: (await rest)._id, }).populate('customer').populate('table');
     res.json({ errcode: 0, reservations: reservations });
-  } else if (u.userType === 3) {
-    var reservations = await Reservation.find({ status: 2, restaurant: u.restaurantId }).populate('customer').populate('table');
-
+  } else if (u.userTypeId === 3) {
+    var rest = (await findManagerByAccountWithRestaurntAsync(u)).restaurantId;
+    if (rest === null) {
+      res.json({ errcode: 2, errmsg: 'restaurant not found' })
+      return;
+    }
+    var reservations = await Reservation.find({ status: 2, restaurant: rest, }).populate('customer').populate('table');
     //.where('table.restaurant', u.restaurantId);
-    console.log(reservations)
+    //console.log(reservations)
     res.json({ errcode: 0, reservations: reservations });
   } else {
+    console.log(401)
     res.status(401).json({ errcode: 1, errmsg: 'permission denied' })
   }
 })

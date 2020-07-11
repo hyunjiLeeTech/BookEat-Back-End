@@ -128,8 +128,8 @@ router.route("/getcustomerinfo").get((req, res) => {
   Customer.findOne({ account: _id })
     .populate("account")
     .then((result) => {
-      console.log(result);
-      res.json(result); //TODO: Not working correctly, needs to be fixed
+      //console.log(result);
+      res.json(result); 
     });
   //console.log(req.user);
 });

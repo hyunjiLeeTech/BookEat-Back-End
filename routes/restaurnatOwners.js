@@ -41,7 +41,7 @@ router.route("/getrestaurantinfo").get((req, res) => {
       .populate("satCloseTimeId")
       .populate("sunCloseTimeId")
       .then((restaurant) => {
-        console.log(restaurant);
+        //console.log(restaurant);
         res.json(restaurant);
       });
   });
