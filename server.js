@@ -150,8 +150,6 @@ let findAccountByEmailAsyc = async function (email) {
   return await Account.find({ email: email });
 };
 
-
-
 // for customer signup
 let addCustomerAsync = async function (obj) {
   const regExpEmail = RegExp(/^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[A-Za-z]+$/);
@@ -417,7 +415,6 @@ let addManagerAsync = async function (obj) {
   const firstname = obj.firstname;
   const lastname = obj.lastname;
   const phonenumber = obj.phonenumber;
-  const accountId = obj.accountId;
 
   const newAccount = new Account({
     email,
@@ -459,7 +456,8 @@ let addManagerAsync = async function (obj) {
   }
 
   let account = await newAccount.save();
-  let restaurantId = await findRestaurantIdAsync(accountId);
+
+  let restaurantId = await findRestaurantIdAsync(obj.resOwnerAccountId);
 
   const newManager = new Manager({
     firstname,
@@ -474,6 +472,7 @@ let addManagerAsync = async function (obj) {
 
 app.post("/managersignup", (req, res) => {
   console.log("Accessing /managersignup");
+  const resOwnerAccountId = req.body.resOwnerAccountId;
 
   //account info
   const email = req.body.email;
@@ -483,7 +482,6 @@ app.post("/managersignup", (req, res) => {
   const firstname = req.body.firstName;
   const lastname = req.body.lastName;
   const phonenumber = req.body.phonenumber;
-  const accountId = req.body.accountId;
 
   obj = {
     email,
@@ -491,7 +489,7 @@ app.post("/managersignup", (req, res) => {
     firstname,
     lastname,
     phonenumber,
-    accountId,
+    resOwnerAccountId,
   };
 
   addManagerAsync(obj)
@@ -529,16 +527,16 @@ app.get(
 );
 
 //TODO: menu item, put more information
-app.get('/restaurants/:id',async function(req, res){
-  try{
-    var rest = await Restaurant.findOne({_id: req.params.id})
-    console.log(req.params.id)
-    res.json({errcode: 0, restaurant: rest})
-  }catch(err){
-    console.log(err)
-    res.json({errcode: 1, err: err})
+app.get("/restaurants/:id", async function (req, res) {
+  try {
+    var rest = await Restaurant.findOne({ _id: req.params.id });
+    console.log(req.params.id);
+    res.json({ errcode: 0, restaurant: rest });
+  } catch (err) {
+    console.log(err);
+    res.json({ errcode: 1, err: err });
   }
-})
+});
 
 app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);
