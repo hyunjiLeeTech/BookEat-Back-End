@@ -529,6 +529,18 @@ app.get(
   }
 );
 
+//TODO: menu item, put more information
+app.get('/restaurants/:id',async function(req, res){
+  try{
+    var rest = await Restaurant.findOne({_id: req.params.id})
+    console.log(req.params.id)
+    res.json({errcode: 0, restaurant: rest})
+  }catch(err){
+    console.log(err)
+    res.json({errcode: 1, err: err})
+  }
+})
+
 app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);
 });
