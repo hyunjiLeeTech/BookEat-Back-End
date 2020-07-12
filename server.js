@@ -75,7 +75,11 @@ app.use("/priceRange", priceRangeRouter);
 
 app.use("/account", accountRouter);
 app.use("/address", addressRouter);
-app.use("/manager", managerRouter);
+app.use(
+  "/manager",
+  passport.authenticate("jwt", { session: false }),
+  managerRouter
+);
 app.use("/storeTime", storeTimeRouter);
 
 app.get(

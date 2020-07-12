@@ -3,6 +3,18 @@ let Account = require("../models/account.model");
 let Restaurant = require("../models/restaurnat.model");
 let Manager = require("../models/manager.model");
 
+router.route("/getmanagerinfo").get((req, res) => {
+  console.log("Accessing /manager/getmanagerinfo");
+  var _id = req.user._id;
+
+  console.log(_id);
+  Manager.findOne({ accountId: _id })
+    .populate("accountId")
+    .then((result) => {
+      res.json(result);
+    });
+});
+
 router.route("/").get((req, res) => {
   console.log("Accessing /manager");
   Manager.find()
