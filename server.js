@@ -150,9 +150,7 @@ let findAccountByEmailAsyc = async function (email) {
   return await Account.find({ email: email });
 };
 
-let findCustomerByPhoneNumberAsync = async function (phonenumber) {
-  return await Customer.find({ phoneNumber: phonenumber });
-};
+
 
 // for customer signup
 let addCustomerAsync = async function (obj) {
@@ -178,10 +176,6 @@ let addCustomerAsync = async function (obj) {
   let message = "";
   if ((await findAccountByEmailAsyc(email)).length > 0) {
     message = "This email is already registered";
-    throw message;
-  }
-  if ((await findCustomerByPhoneNumberAsync(phoneNumber)).length > 0) {
-    message = "This phone number is already registered";
     throw message;
   }
 
