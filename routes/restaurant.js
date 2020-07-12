@@ -67,7 +67,6 @@ async function isTableAvaliableAtTime(table, datetime, eatingTime) {
   return true;
 }
 
-
 router.post('/getRestaurantOwnerAndManagerViaRestaurantId', async (req, res)=>{
   console.log("IN")
   var ro = await (await Restaurant.findOne({_id: req.body.restaurantId}).populate("restaurantOwnerId")).restaurantOwnerId.populate("account").execPopulate();
@@ -83,15 +82,15 @@ router.route('/tableinfo').post(async (req, res) => {
     resId: req.body.resId,
     numOfPeople: req.body.numOfPeople,
     dateTime: req.body.dateTime,
-  }
+  };
   console.log(obj);
   var rest = Restaurant.findOne({ _id: obj.resId });
   var ts = [];
   try {
     ts = await Table.find({ restaurant: (await rest)._id })
   } catch (err) {
-    console.error(err)
-    throw err
+    console.error(err);
+    throw err;
   }
   var tables = [];
   for (var i in ts) {
@@ -99,13 +98,17 @@ router.route('/tableinfo').post(async (req, res) => {
   }
   if (tables.length > 0) {
     //console.log(tables);
-    for (var i in tables) { //checking number of people condition
+    for (var i in tables) {
+      //checking number of people condition
       if (tables[i].status) {
         if (obj.numOfPeople <= 2 && tables[i].size <= 2) {
           tables[i].isOpen = true;
         } else if (obj.numOfPeople <= 4 && tables[i].size <= 4) {
           tables[i].isOpen = true;
-        } else if (tables[i].size - obj.numOfPeople > 0 && tables[i].size - obj.numOfPeople < 3) {
+        } else if (
+          tables[i].size - obj.numOfPeople > 0 &&
+          tables[i].size - obj.numOfPeople < 3
+        ) {
           tables[i].isOpen = true;
         } else {
           tables[i].isOpen = false;
@@ -114,9 +117,12 @@ router.route('/tableinfo').post(async (req, res) => {
         tables[i].isOpen = false;
       }
     }
-    for (var t of tables) {//checking time condition
+    for (var t of tables) {
+      //checking time condition
       if (t.isOpen) {
-        if (!(await isTableAvaliableAtTime(t, new Date(obj.dateTime), eatingTime))) {
+        if (
+          !(await isTableAvaliableAtTime(t, new Date(obj.dateTime), eatingTime))
+        ) {
           t.isOpen = false;
         }
       }
@@ -126,10 +132,10 @@ router.route('/tableinfo').post(async (req, res) => {
 })
 
 //for testing purpose
-router.route('/addTable').post(async (req, res) => {
+router.route("/addTable").post(async (req, res) => {
   //res: 5efa8fc9dd9918ba08ac9ade
   var ress = await Restaurant.find();
-  console.log(req.body.size)
+  console.log(req.body.size);
   var newTable = new Table({
     restaurant: ress[1],
     size: req.body.size,
@@ -177,8 +183,7 @@ router.route("/confirmattendence").post(async (req, res) => {
 })
 
 //TODO:  clean code, food items
-router.route('/reserve').post(async (req, res) => {
-
+router.route("/reserve").post(async (req, res) => {
   var obj = {
     //resId: req.body.resId,
     numOfPeople: req.body.numOfPeople,
@@ -264,7 +269,7 @@ router.route('/reservationsofpast14days').get(async (req, res) => {
     console.log(401)
     res.status(401).json({ errcode: 1, errmsg: 'permission denied' })
   }
-})
+});
 
 //for restaurant management
 router.route('/upcomingreservations').get(async (req, res) => {
@@ -362,83 +367,8 @@ router.route("/editresprofile").post((req, res) => {
     });
 });
 
-//for testing
-router.route("/:id").get((req, res) => {
-  Restaurant.findById(req.params.id)
-    .populate("addressId")
-    .populate("cuisineStyleId")
-    .populate("categoryId")
-    .populate("priceRangeId")
-    .populate("monOpenTimeId")
-    .populate("tueOpenTimeId")
-    .populate("wedOpenTimeId")
-    .populate("thuOpenTimeId")
-    .populate("friOpenTimeId")
-    .populate("satOpenTimeId")
-    .populate("sunOpenTimeId")
-    .populate("monCloseTimeId")
-    .populate("tueCloseTimeId")
-    .populate("wedCloseTimeId")
-    .populate("thuCloseTimeId")
-    .populate("friCloseTimeId")
-    .populate("satCloseTimeId")
-    .populate("sunCloseTimeId")
-    .then((restaurant) => res.json(restaurant))
-    .catch((err) => res.status(400).json("Error: " + err));
-});
-
-// for testing
-router.route("/:id").post((req, res) => {
-  var obj = {
-    resId: req.params.id,
-    resName: req.body.resname,
-    phoneNumber: req.body.phonenumber,
-    businessNum: req.body.businessnumber,
-    description: req.body.description,
-
-    //open and close times
-    monOpenTime: req.body.monOpenTime,
-    tueOpenTime: req.body.tueOpenTime,
-    wedOpenTime: req.body.wedOpenTime,
-    thuOpenTime: req.body.thuOpenTime,
-    friOpenTime: req.body.friOpenTime,
-    satOpenTime: req.body.satOpenTime,
-    sunOpenTime: req.body.sunOpenTime,
-    monCloseTime: req.body.monCloseTime,
-    tueCloseTime: req.body.tueCloseTime,
-    wedCloseTime: req.body.wedCloseTime,
-    thuCloseTime: req.body.thuCloseTime,
-    friCloseTime: req.body.friCloseTime,
-    satCloseTime: req.body.satCloseTime,
-    sunCloseTime: req.body.sunCloseTime,
-
-    //address
-    province: req.body.province,
-    streetName: req.body.streetname,
-    streetNum: req.body.streetnumber,
-    postalCode: req.body.postalcode,
-    city: req.body.city,
-
-    //cuisine style
-    cuisineStyleVal: req.body.cuisineStyle,
-
-    //category
-    categVal: req.body.category,
-
-    //price range
-    priceName: req.body.priceRange,
-  };
-
-  editRestaurantProfile(obj)
-    .then(() => {
-      res.json({ errcode: 0, errmsg: "success" });
-    })
-    .catch((err) => {
-      res.json({ errcode: 1, errmsg: err });
-    });
-});
-
 let editRestaurantProfile = async (obj) => {
+  let status = 1; // completed res profile. If any fields are blank, it will change to 2 means working on filling the profile
   let resOwnerId, resId, addrId, cuisineId, categoryId, priceRangeId;
   let monOpenId,
     tueOpenId,
@@ -455,6 +385,81 @@ let editRestaurantProfile = async (obj) => {
     satCloseId,
     sunCloseId;
 
+  //regular expression for validation
+  const regExpPhone = RegExp(
+    /^\(?([0-9]{3})\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$/
+  );
+  const regExpPostal = RegExp(/^\d{5}-\d{4}|\d{5}|[A-Z]\d[A-Z] \d[A-Z]\d$/);
+  const regExpNumbers = RegExp(/^[0-9]+$/);
+  const regExpBusinessNumber = RegExp(/^\d{9}$/);
+
+  //restaurant basic info validation
+  let message = "";
+
+  if (obj.resName.length < 3) {
+    message = "Restaurant Name: At lesat 3 characters are required";
+    throw message;
+  }
+
+  if (!regExpPhone.test(obj.phoneNumber)) {
+    message = "Incorrect phone number";
+    throw message;
+  }
+
+  if (!regExpBusinessNumber.test(obj.businessNum)) {
+    message = "Incorrect Business Number";
+    throw message;
+  }
+
+  //address validation
+  if (!regExpPostal.test(obj.postalCode)) {
+    message = "Incorrect postal code";
+    throw message;
+  }
+
+  if (!regExpNumbers.test(obj.streetNum)) {
+    message = "Street Number: At least 1 number required";
+    throw message;
+  }
+
+  if (obj.streetName.length < 4) {
+    message = "Street Name: At least 4 characters are required";
+    throw message;
+  }
+
+  if (obj.province.length < 2) {
+    message = "Province: At lesat 2 characters are required";
+    throw message;
+  }
+
+  if (obj.city.length < 1) {
+    message = "City: Please write the city";
+    throw message;
+  }
+
+  // for status whether 1 or 2
+  if (
+    obj.monOpenTime == "" ||
+    obj.tueOpenTime == "" ||
+    obj.wedOpenTime == "" ||
+    obj.thuOpenTime == "" ||
+    obj.friOpenTime == "" ||
+    obj.satOpenTime == "" ||
+    obj.sunOpenTime == "" ||
+    obj.monCloseTime == "" ||
+    obj.tueCloseTime == "" ||
+    obj.wedCloseTime == "" ||
+    obj.thuCloseTime == "" ||
+    obj.friCloseTime == "" ||
+    obj.satCloseTime == "" ||
+    obj.sunCloseTime == "" ||
+    obj.cuisineStyleVal == "" ||
+    obj.categVal == "" ||
+    obj.priceName == ""
+  ) {
+    status = 2;
+  }
+
   await RestaurantOwner.findOne({ account: obj.accountId }).then((resOwner) => {
     resOwnerId = resOwner._id;
   });
@@ -468,6 +473,9 @@ let editRestaurantProfile = async (obj) => {
   await CuisineStyle.findOne({ cuisineVal: obj.cuisineStyleVal }).then(
     (cuisineStyle) => {
       cuisineId = cuisineStyle._id;
+
+      if (obj.cuisineStyleVal == "") {
+      }
     }
   );
 
@@ -566,11 +574,14 @@ let editRestaurantProfile = async (obj) => {
     }
   );
 
+  sunClose = StoreTime.findOne({ storeTimeVal: obj.sunCloseTime });
+
   await Restaurant.findById(resId).then((restaurant) => {
     //restaurant info
     restaurant.resName = obj.resName;
     restaurant.phoneNumber = obj.phoneNumber;
     restaurant.businessNum = obj.businessNum;
+    restaurant.status = status;
 
     restaurant.restaurantDescription =
       typeof obj.description != "undefined" ? obj.description : "";

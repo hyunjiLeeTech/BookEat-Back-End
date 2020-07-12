@@ -61,7 +61,7 @@ app.use(
 );
 app.use(
   "/restaurant",
-   passport.authenticate("jwt", { session: false }), //FIXME: DEBUGGING
+  passport.authenticate("jwt", { session: false }), //FIXME: DEBUGGING
   restaurantRouter
 );
 app.use(
@@ -284,6 +284,7 @@ let addRestaurantOwnerAsync = async function (obj) {
   const resName = obj.resName;
   const businessNum = obj.businessNum;
   const phoneNumber = obj.phoneNumber;
+  const status = obj.status;
 
   const newAccount = new Account({
     email,
@@ -358,6 +359,7 @@ let addRestaurantOwnerAsync = async function (obj) {
     resName,
     phoneNumber,
     businessNum,
+    status,
     restaurantOwnerId: restOwner._id,
     addressId: address._id,
   });
@@ -385,6 +387,8 @@ app.post("/restaurantownersignup", (req, res) => {
   const resName = req.body.resname;
   const businessNum = req.body.businessnumber;
   const phoneNumber = req.body.phonenumber;
+  const status = 3; // sign up. not completed the profile
+
   var obj = {
     userTypeId,
     password,
@@ -397,6 +401,7 @@ app.post("/restaurantownersignup", (req, res) => {
     resName,
     businessNum,
     phoneNumber,
+    status,
   };
   addRestaurantOwnerAsync(obj)
     .then(() => {
