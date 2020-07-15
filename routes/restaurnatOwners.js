@@ -3,10 +3,17 @@ let RestaurantOwner = require("../models/restaurantOwner.model");
 let Account = require("../models/account.model");
 let Address = require("../models/address.model");
 const Restaurant = require("../models/restaurnat.model");
+let Manager = require("../models/manager.model");
 
 let findAccountByEmailAsyc = async function (email) {
   return await Account.find({ email: email });
 };
+
+let findRestaurantById = async function (actId) {
+  let resOwner = await RestaurantOwner.findOne({ account: actId });
+  console.log("ResOwner: " + resOwner._id);
+  return await Restaurant.findOne({ restaurantOwnerId: resOwner._id });
+}
 
 //get request (/customers)
 router.route("/").get((req, res) => {
@@ -15,6 +22,23 @@ router.route("/").get((req, res) => {
     .then((restaurantOwner) => res.json(restaurantOwner))
     .catch((err) => res.status(400).json("Error: " + err));
 });
+
+router.route("/getmanagers").get(async (req, res) => {
+  //var actId = req.user._id;
+  var actId = "5efc095404e546869cdc334e";
+
+  try {
+    var restaurant = await findRestaurantById(actId);
+    console.log("Res: " + restaurant._id);
+
+    var managers = await Manager.find({ restaurantId: restaurant._id });
+    console.log(managers);
+    res.json({ errcode: 0, managers: managers })
+  } catch (err) {
+    console.error(err);
+    res.json({ errcode: 1, errmsg: "internal error" })
+  }
+})
 
 router.route("/getrestaurantinfo").get((req, res) => {
   var _id = req.user._id;
