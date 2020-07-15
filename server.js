@@ -480,7 +480,7 @@ app.post("/managersignup", (req, res) => {
 
   //account info
   const email = req.body.email;
-  const password = req.body.password;
+  const password = req.body.passwordMan;
 
   //manager info
   const firstname = req.body.firstName;
