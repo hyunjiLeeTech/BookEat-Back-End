@@ -45,16 +45,21 @@ router.route("/deletemanager").post(async (req, res) => {
   console.log("Accessing /restaurantOwners/deletemanager");
   let manAccountId;
 
-  await Manager.findById(req.body.deleteManId).then((manager) => {
-    manager.isActive = false;
-    manAccountId = manager.accountId._id;
-    manager.save();
-  });
+  try {
+    await Manager.findById(req.body.deleteManId).then((manager) => {
+      manager.isActive = false;
+      manAccountId = manager.accountId._id;
+      manager.save();
+    });
 
-  await Account.findById(manAccountId).then((manAccount) => {
-    manAccount.isActive = false;
-    manAccount.save();
-  });
+    await Account.findById(manAccountId).then((manAccount) => {
+      manAccount.isActive = false;
+      manAccount.save();
+    });
+    res.json({ errcode: 0, errmsg: "success" });
+  } catch (err) {
+    res.json({ errcode: 1, errmsg: "internal error" });
+  }
 });
 
 router.route("/getrestaurantinfo").get((req, res) => {
