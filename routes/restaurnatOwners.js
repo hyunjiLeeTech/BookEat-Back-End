@@ -24,8 +24,8 @@ router.route("/").get((req, res) => {
 });
 
 router.route("/getmanagers").get(async (req, res) => {
-  //var actId = req.user._id;
-  var actId = "5efc095404e546869cdc334e";
+  console.log("Accessing /restaurantOwners/getmanagers")
+  var actId = req.user._id;
 
   try {
     var restaurant = await findRestaurantById(actId);
