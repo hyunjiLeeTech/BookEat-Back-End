@@ -13,7 +13,7 @@ let findRestaurantById = async function (actId) {
   let resOwner = await RestaurantOwner.findOne({ account: actId });
   console.log("ResOwner: " + resOwner._id);
   return await Restaurant.findOne({ restaurantOwnerId: resOwner._id });
-}
+};
 
 //get request (/customers)
 router.route("/").get((req, res) => {
@@ -24,21 +24,38 @@ router.route("/").get((req, res) => {
 });
 
 router.route("/getmanagers").get(async (req, res) => {
-  console.log("Accessing /restaurantOwners/getmanagers")
+  console.log("Accessing /restaurantOwners/getmanagers");
   var actId = req.user._id;
 
   try {
     var restaurant = await findRestaurantById(actId);
     console.log("Res: " + restaurant._id);
 
-    var managers = await Manager.find({ restaurantId: restaurant._id });
-    console.log(managers);
-    res.json({ errcode: 0, managers: managers })
+    var managers = await Manager.find({
+      restaurantId: restaurant._id,
+      isActive: true,
+    });
+    res.json({ errcode: 0, managers: managers });
   } catch (err) {
-    console.error(err);
-    res.json({ errcode: 1, errmsg: "internal error" })
+    res.json({ errcode: 1, errmsg: "internal error" });
   }
-})
+});
+
+router.route("/deletemanager").post(async (req, res) => {
+  console.log("Accessing /restaurantOwners/deletemanager");
+  let manAccountId;
+
+  await Manager.findById(req.body.deleteManId).then((manager) => {
+    manager.isActive = false;
+    manAccountId = manager.accountId._id;
+    manager.save();
+  });
+
+  await Account.findById(manAccountId).then((manAccount) => {
+    manAccount.isActive = false;
+    manAccount.save();
+  });
+});
 
 router.route("/getrestaurantinfo").get((req, res) => {
   var _id = req.user._id;

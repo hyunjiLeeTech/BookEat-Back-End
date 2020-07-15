@@ -420,10 +420,14 @@ let addManagerAsync = async function (obj) {
   const lastname = obj.lastname;
   const phonenumber = obj.phonenumber;
 
+  //manager and account info (status)
+  const isActive = true; // maanager account activated
+
   const newAccount = new Account({
     email,
     password,
     userTypeId,
+    isActive,
   });
 
   //Validation
@@ -467,6 +471,7 @@ let addManagerAsync = async function (obj) {
     firstname,
     lastname,
     phonenumber,
+    isActive,
     accountId: account._id,
     restaurantId,
   });
