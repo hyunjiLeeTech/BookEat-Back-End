@@ -74,10 +74,18 @@ async function getAccountByIdAsync(id){
   return await Account.findOne({_id: id});
 }
 
+async function getReservationByIdWithCustomerAsync(id) {
+  return await Reservation.findOne({ _id: id }).populate('customer');
+}
+
 //TODO: testing
 router.route("/cancelreservation").post(async (req, res) => {
   try {
-    var reservation = await getReservationByIdAsync(req.body.reservationId);
+    var reservation = await getReservationByIdWithCustomerAsync(req.body.reservationId);
+    if(reservation.customer.account !== req.user._id){
+      res.status(401).send('access denied');
+      return;
+    }
     reservation.status = 3;
     reservation.save().then(() => {
       res.json({ errcode: 0, errmsg: "success" })

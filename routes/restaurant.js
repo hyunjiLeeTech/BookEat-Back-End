@@ -152,6 +152,10 @@ router.route("/addTable").post(async (req, res) => {
 })
 //TODO: testing, securty test
 router.route("/cancelreservation").post(async (req, res) => {
+  if(req.userTypeId === 1) {
+    res.status(401).send('access denied');
+    return;
+  }
   try {
     var reservation = await getReservationByIdAsync(req.body.reservationId);
     reservation.status = 4;
@@ -244,8 +248,9 @@ router.route("/reserve").post(async (req, res) => {
 //TODO: Finish code, reservation update
 router.route('/reservationsofpast14days').get(async (req, res) => {
   //var u = { _id: '5efa8fe8dd9918ba08ac9ae0', userType: 3, restaurantId: '5efa8fc9dd9918ba08ac9ade' }//FIXME: for debug restaurant maanger
+  console.log(req.user);
   var u = req.user;
-  if (u.userType === 2) {
+  if (u.userTypeId === 2) {
     var rest = Restaurant.findOne({ restaurantOwnerId: await findRestaurantOwnerByAccountAsync(u) });
     //console.log(rest)
     if (rest === null) {
@@ -254,7 +259,7 @@ router.route('/reservationsofpast14days').get(async (req, res) => {
     }
     var reservations = await Reservation.find({ status: { $ne: 2 }, restaurant: (await rest)._id, dateTime: { $gte: moment(new Date()).add(-14, 'd').toDate() } }).populate('customer').populate('table');
     res.json({ errcode: 0, reservations: reservations });
-  } else if (u.userType === 3) {
+  } else if (u.userTypeId === 3) {
     var rest = (await findManagerByAccountWithRestaurntAsync(u)).restaurantId;
     //console.log(rest)
     if (rest === null) {
@@ -303,7 +308,6 @@ router.route('/upcomingreservations').get(async (req, res) => {
     res.status(401).json({ errcode: 1, errmsg: 'permission denied' })
   }
 })
-
 
 
 
