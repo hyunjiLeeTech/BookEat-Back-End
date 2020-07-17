@@ -52,6 +52,7 @@ const restaurantRouter = require("./routes/restaurant");
 const addressRouter = require("./routes/address");
 const managerRouter = require("./routes/manager");
 const storeTimeRouter = require("./routes/storeTime");
+const menuRouter = require("./routes/menu");
 
 // app.use
 app.use(
@@ -80,6 +81,11 @@ app.use(
   passport.authenticate("jwt", { session: false }),
   managerRouter
 );
+app.use(
+  "/menu",
+  passport.authenticate("jwt", { session: false }),
+  menuRouter
+)
 app.use("/storeTime", storeTimeRouter);
 
 app.get(
