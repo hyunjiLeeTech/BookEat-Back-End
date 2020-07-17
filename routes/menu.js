@@ -3,6 +3,25 @@ let Menu = require("../models/menu.model");
 let RestaurantOwner = require("../models/restaurantOwner.model");
 let Restaurant = require("../models/restaurnat.model");
 
+router.route("/getmenus").get(async (req, res) => {
+    console.log("Accessing /menu/getmenus");
+    var actId = req.user._id;
+
+    try {
+        var restaurant = await findRestaurantByIdAsync(actId);
+
+        var menus = await Menu.find({
+            restaurantId: restaurant._id,
+            isActive: true
+        });
+        console.log("this is menu");
+        console.log(menus);
+        res.json({ errcode: 0, menus: menus });
+    } catch (err) {
+        res.json({ errcode: 1, errmsg: "internal error" });
+    }
+})
+
 router.route("/addmenu").post((req, res) => {
     console.log("Accessing /menu/addmenu");
     var accountId = req.user._id;
@@ -28,7 +47,7 @@ router.route("/addmenu").post((req, res) => {
     });
 })
 
-async function getRestaurantByIdAsync(id) {
+async function findRestaurantByIdAsync(id) {
     restaurantOwner = await RestaurantOwner.findOne({ account: id })
 
     return await Restaurant.findOne({ restaurantOwnerId: restaurantOwner._id });
@@ -52,7 +71,7 @@ async function addMenuAsync(obj) {
         throw message;
     }
 
-    restaurant = await getRestaurantByIdAsync(accountId);
+    restaurant = await findRestaurantByIdAsync(accountId);
 
     const newMenu = new Menu({
         menuName,
