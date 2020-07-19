@@ -544,7 +544,33 @@ app.get(
 //TODO: menu item, put more information
 app.get("/restaurants/:id", async function (req, res) {
   try {
-    var rest = await Restaurant.findOne({ _id: req.params.id });
+    var rest = await Restaurant.findOne({ _id: req.params.id })
+    .populate('addressId').populate('categoryId').populate('cuisineStyleId').populate('priceRangeId')
+    .populate('monOpenTimeId')
+    .populate('tueOpenTimeId')
+    .populate('wedOpenTimeId')
+    .populate('thuOpenTimeId')
+    .populate('friOpenTimeId')
+    .populate('satOpenTimeId')
+    .populate('sunOpenTimeId')
+    .populate('monCloseTimeId')
+    .populate('tueCloseTimeId')
+    .populate('wedCloseTimeId')
+    .populate('thuCloseTimeId')
+    .populate('friCloseTimeId')
+    .populate('satCloseTimeId')
+    .populate('sunCloseTimeId')
+  
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    ;
     console.log(req.params.id);
     res.json({ errcode: 0, restaurant: rest });
   } catch (err) {
@@ -586,13 +612,32 @@ async function isTableAvaliableAtTimeAsync(table, datetime, eatingTime) {
 
 
 
+app.post('/search', (req, res)=>{
+  Restaurant.find()
+  .populate('addressId').populate('categoryId').populate('cuisineStyleId').populate('priceRangeId')
+  .populate('monOpenTimeId')
+  .populate('tueOpenTimeId')
+  .populate('wedOpenTimeId')
+  .populate('thuOpenTimeId')
+  .populate('friOpenTimeId')
+  .populate('satOpenTimeId')
+  .populate('sunOpenTimeId')
+  .populate('monCloseTimeId')
+  .populate('tueCloseTimeId')
+  .populate('wedCloseTimeId')
+  .populate('thuCloseTimeId')
+  .populate('friCloseTimeId')
+  .populate('satCloseTimeId')
+  .populate('sunCloseTimeId')
 
-
-// router.route('/search').post((req,res)=>{
-//   var numOfPeople = req.body.numOfPeople;
-//   var dateTime = req.body.dateTime;
   
-// })
+  .then((results)=>{
+    res.json({errcode: 0, restaurants: results})
+  }).catch(err=>{
+    console.log(err);
+    res.json({errcode: 1, errmsg: err})
+  })
+})
 
 app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);
