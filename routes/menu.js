@@ -47,6 +47,18 @@ router.route("/addmenu").post((req, res) => {
     });
 })
 
+router.route("/editmenu").post((req, res) => {
+    console.log("Accessing /menu/editmenu");
+    console.log(req.body);
+
+    Menu.findById(req.body._id).then((menu) => {
+        menu.menuName = req.body.menuName;
+        menu.menuPrice = req.body.menuPrice;
+        menu.menuDescript = req.body.menuDescript;
+        menu.save();
+    })
+})
+
 async function findRestaurantByIdAsync(id) {
     restaurantOwner = await RestaurantOwner.findOne({ account: id })
 
