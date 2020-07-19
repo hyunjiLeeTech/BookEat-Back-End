@@ -49,7 +49,7 @@ async function getReservationByIdAsync(id) {
   return await Reservation.findOne({ _id: id });
 }
 
-async function isTableAvaliableAtTime(table, datetime, eatingTime) {
+async function isTableAvaliableAtTimeAsync(table, datetime, eatingTime) {
   //console.log(datetime);
   var reservation = Reservation.find({
     table: table,
@@ -121,7 +121,7 @@ router.route('/tableinfo').post(async (req, res) => {
       //checking time condition
       if (t.isOpen) {
         if (
-          !(await isTableAvaliableAtTime(t, new Date(obj.dateTime), eatingTime))
+          !(await isTableAvaliableAtTimeAsync(t, new Date(obj.dateTime), eatingTime))
         ) {
           t.isOpen = false;
         }
@@ -208,7 +208,7 @@ router.route("/reserve").post(async (req, res) => {
     res.json({ errcode: 1, errmsg: "Table closed" });
     return;
   }
-  if (!await (isTableAvaliableAtTime(table, new Date(obj.dateTime), eatingTime))) {
+  if (!await (isTableAvaliableAtTimeAsync(table, new Date(obj.dateTime), eatingTime))) {
     res.json({ errcode: 3, errmsg: "Table is already reserved, please choose another table" });
     return;
   }
