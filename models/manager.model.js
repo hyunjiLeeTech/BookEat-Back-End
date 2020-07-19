@@ -19,6 +19,9 @@ const managerSchema = new Schema(
       minlength: 10,
       maxlength: 10,
     },
+    isActive: {
+      type: Boolean,
+    },
     restaurantId: { type: Schema.Types.ObjectId, ref: "Restaurant" },
     accountId: { type: Schema.Types.ObjectId, ref: "Account" },
   },

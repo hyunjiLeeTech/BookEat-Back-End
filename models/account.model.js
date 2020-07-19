@@ -7,6 +7,7 @@ const accountSchema = new Schema(
     userTypeId: { type: Number, required: true },
     password: { type: String, unique: false, required: true },
     token: { type: String },
+    isActive: { type: Boolean },
   },
   {
     timestamps: true,

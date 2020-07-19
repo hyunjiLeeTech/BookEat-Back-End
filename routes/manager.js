@@ -3,6 +3,77 @@ let Account = require("../models/account.model");
 let Restaurant = require("../models/restaurnat.model");
 let Manager = require("../models/manager.model");
 
+router.route("/getmanagerinfo").get((req, res) => {
+  console.log("Accessing /manager/getmanagerinfo");
+  var _id = req.user._id;
+
+  Manager.findOne({ accountId: _id })
+    .populate("accountId")
+    .then((result) => {
+      res.json(result);
+    });
+});
+
+router.route("/editmanagerprofile").post((req, res) => {
+  console.log("Accessing /manager/editmanagerprofile");
+  var _id = req.user._id;
+
+  var obj = {
+    accountId: _id,
+    firstName: req.body.firstName,
+    lastName: req.body.lastName,
+    phoneNumber: req.body.phonenumber,
+  };
+
+  editManagerProfile(obj)
+    .then(() => {
+      res.json({ errcode: 0, errmsg: "success" });
+    })
+    .catch((err) => {
+      res.json({ errcode: 1, errmsg: err });
+    });
+});
+
+let editManagerProfile = async (obj) => {
+  let firstname = obj.firstName;
+  let lastname = obj.lastName;
+  let phonenumber = obj.phoneNumber;
+
+  //validation
+  const regExpPhone = RegExp(
+    /^\(?([0-9]{3})\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$/
+  );
+
+  let message = "";
+  if (!regExpPhone.test(phonenumber)) {
+    message = "Incorrect phone number";
+    throw message;
+  }
+
+  if (firstname.length < 1) {
+    message = "Firstname is required";
+    throw message;
+  }
+
+  if (lastname.length < 1) {
+    message = "Lastname is required";
+    throw message;
+  }
+
+  await Manager.findOne({ accountId: obj.accountId })
+    .then((manager) => {
+      manager.firstname = firstname;
+      manager.lastname = lastname;
+      manager.phonenumber = phonenumber;
+
+      manager.save();
+    })
+    .catch((err) => {
+      message = err;
+      throw message;
+    });
+};
+
 router.route("/").get((req, res) => {
   console.log("Accessing /manager");
   Manager.find()

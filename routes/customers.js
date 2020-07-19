@@ -11,8 +11,8 @@ let findCustomerByPhoneNumberAsync = async function (phonenumber) {
   return await Customer.find({ phoneNumber: phonenumber });
 };
 
-let findCustomerByAccount = async function(acc){
-  return await Customer.findOne({account: acc})
+let findCustomerByAccount = async function (acc) {
+  return await Customer.findOne({ account: acc })
 }
 
 let addCustomerAsync = async function (obj) {
@@ -70,13 +70,69 @@ let addCustomerAsync = async function (obj) {
   return await newCustomer.save();
 };
 
-async function getAccountByIdAsync(id){
-  return await Account.findOne({_id: id});
+async function getAccountByIdAsync(id) {
+  return await Account.findOne({ _id: id });
 }
 
 async function getReservationByIdWithCustomerAsync(id) {
   return await Reservation.findOne({ _id: id }).populate('customer');
 }
+let editCustomerAsync = async function (obj) {
+  const firstName = obj.firstName;
+  const lastName = obj.lastName;
+  const phoneNumber = obj.phoneNumber;
+
+  const regExpPhone = RegExp(
+    /^\(?([0-9]{3})\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$/
+  );
+
+  let message = "";
+
+  if (firstName.length < 1) {
+    message = "First name should have at least one char";
+    throw message;
+  }
+
+  if (lastName.length < 1) {
+    message = "First name should have at least one char";
+    throw message;
+  }
+
+  if (!regExpPhone.test(phoneNumber)) {
+    message = "Incorrect phone number";
+    throw message;
+  }
+
+  return await Customer.findOne({ account: obj.accountId }).then((customer) => {
+    customer.firstName = firstName;
+    customer.lastName = lastName;
+    customer.phoneNumber = phoneNumber;
+    customer.save();
+  });
+};
+
+router.route("/editcustomerprofile").post(async (req, res) => {
+  console.log("Accessing customers/editcustomerprofile");
+  try {
+    var obj = {
+      accountId: req.user._id,
+      firstName: req.body.firstname,
+      lastName: req.body.lastname,
+      phoneNumber: req.body.phonenumber,
+    };
+
+    editCustomerAsync(obj)
+      .then(() => {
+        res.json({ errcode: 0, errmsg: "success" });
+      })
+      .catch((err) => {
+        res.json({ errcode: 1, errmsg: err });
+      });
+  } catch (err) {
+    console.log(err);
+    res.status(500).send("internal error");
+  }
+});
 
 //TODO: testing
 router.route("/cancelreservation").post(async (req, res) => {
@@ -100,20 +156,20 @@ router.route("/cancelreservation").post(async (req, res) => {
 
 
 
-router.route("/reservationsofpast60days").get(async (req, res)=>{
+router.route("/reservationsofpast60days").get(async (req, res) => {
   var u = req.user;
   //console.log(u);
-  try{
-    var reservations = await Reservation.find({customer: await findCustomerByAccount(u)});
-    res.json({errcode: 0, reservations: reservations})
-  }catch(err){
+  try {
+    var reservations = await Reservation.find({ customer: await findCustomerByAccount(u) });
+    res.json({ errcode: 0, reservations: reservations })
+  } catch (err) {
     console.error(err);
-    res.json({errcode: 1, errmsg: "internal error"})
+    res.json({ errcode: 1, errmsg: "internal error" })
   }
 })
 
 //TODO: cancel reservation by customer
-router.route("/cancelreservation").post((req, res)=>{
+router.route("/cancelreservation").post((req, res) => {
 
 })
 
@@ -137,7 +193,7 @@ router.route("/getcustomerinfo").get((req, res) => {
     .populate("account")
     .then((result) => {
       //console.log(result);
-      res.json(result); 
+      res.json(result);
     });
   //console.log(req.user);
 });

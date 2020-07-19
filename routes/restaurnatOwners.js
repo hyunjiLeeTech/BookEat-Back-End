@@ -3,9 +3,16 @@ let RestaurantOwner = require("../models/restaurantOwner.model");
 let Account = require("../models/account.model");
 let Address = require("../models/address.model");
 const Restaurant = require("../models/restaurnat.model");
+let Manager = require("../models/manager.model");
 
 let findAccountByEmailAsyc = async function (email) {
   return await Account.find({ email: email });
+};
+
+let findRestaurantById = async function (actId) {
+  let resOwner = await RestaurantOwner.findOne({ account: actId });
+  console.log("ResOwner: " + resOwner._id);
+  return await Restaurant.findOne({ restaurantOwnerId: resOwner._id });
 };
 
 //get request (/customers)
@@ -14,6 +21,45 @@ router.route("/").get((req, res) => {
     .populate("account")
     .then((restaurantOwner) => res.json(restaurantOwner))
     .catch((err) => res.status(400).json("Error: " + err));
+});
+
+router.route("/getmanagers").get(async (req, res) => {
+  console.log("Accessing /restaurantOwners/getmanagers");
+  var actId = req.user._id;
+
+  try {
+    var restaurant = await findRestaurantById(actId);
+    console.log("Res: " + restaurant._id);
+
+    var managers = await Manager.find({
+      restaurantId: restaurant._id,
+      isActive: true,
+    });
+    res.json({ errcode: 0, managers: managers });
+  } catch (err) {
+    res.json({ errcode: 1, errmsg: "internal error" });
+  }
+});
+
+router.route("/deletemanager").post(async (req, res) => {
+  console.log("Accessing /restaurantOwners/deletemanager");
+  let manAccountId;
+
+  try {
+    await Manager.findById(req.body.deleteManId).then((manager) => {
+      manager.isActive = false;
+      manAccountId = manager.accountId._id;
+      manager.save();
+    });
+
+    await Account.findById(manAccountId).then((manAccount) => {
+      manAccount.isActive = false;
+      manAccount.save();
+    });
+    res.json({ errcode: 0, errmsg: "success" });
+  } catch (err) {
+    res.json({ errcode: 1, errmsg: "internal error" });
+  }
 });
 
 router.route("/getrestaurantinfo").get((req, res) => {
