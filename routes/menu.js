@@ -59,6 +59,16 @@ router.route("/editmenu").post((req, res) => {
     })
 })
 
+router.route("/deletemenu").post((req, res) => {
+    console.log("Accessing /menu/deletemenu");
+    console.log(req.body);
+
+    Menu.findById(req.body._id).then((menu) => {
+        menu.isActive = false;
+        menu.save();
+    })
+})
+
 async function findRestaurantByIdAsync(id) {
     restaurantOwner = await RestaurantOwner.findOne({ account: id })
 
