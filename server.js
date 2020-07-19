@@ -540,6 +540,47 @@ app.get('/restaurants/:id',async function(req, res){
   }
 })
 
+
+
+
+
+
+
+
+
+
+
+
+async function isTableAvaliableAtTimeAsync(table, datetime, eatingTime) {
+  //console.log(datetime);
+  var reservation = Reservation.find({
+    table: table,
+    status: 2,
+    dateTime: {
+      $gte: moment(datetime).add(0 - eatingTime, 'h').toDate(),
+      $lte: moment(datetime).add(eatingTime, 'h').toDate()
+    }
+  })
+  if ((await reservation).length > 0) {
+    return false;
+  }
+  //console.log(moment(datetime).add(0-eatingTime, 'h').toDate());
+  //console.log(new Date(datetime))
+  return true;
+}
+
+
+
+
+
+
+
+// router.route('/search').post((req,res)=>{
+//   var numOfPeople = req.body.numOfPeople;
+//   var dateTime = req.body.dateTime;
+  
+// })
+
 app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);
 });
