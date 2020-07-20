@@ -53,6 +53,7 @@ const addressRouter = require("./routes/address");
 const managerRouter = require("./routes/manager");
 const storeTimeRouter = require("./routes/storeTime");
 const menuRouter = require("./routes/menu");
+const discountRouter = require("./routes/discount");
 
 // app.use
 app.use(
@@ -85,7 +86,12 @@ app.use(
   "/menu",
   passport.authenticate("jwt", { session: false }),
   menuRouter
-)
+);
+app.use(
+  "/discount",
+  passport.authenticate("jwt", { session: false }),
+  discountRouter
+);
 app.use("/storeTime", storeTimeRouter);
 
 app.get(
@@ -591,7 +597,7 @@ async function isTableAvaliableAtTimeAsync(table, datetime, eatingTime) {
 // router.route('/search').post((req,res)=>{
 //   var numOfPeople = req.body.numOfPeople;
 //   var dateTime = req.body.dateTime;
-  
+
 // })
 
 app.listen(port, () => {
