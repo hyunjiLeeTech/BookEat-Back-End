@@ -10,6 +10,9 @@ const passport = require("./auth/passport-config");
 const jwt = require("jsonwebtoken");
 const app = express();
 const port = process.env.PORT || 5000;
+const cache = require('memory-cache') //in-memory cache
+const moment = require('moment')
+
 
 //database models
 let Customer = require("./models/customer.model");
@@ -18,6 +21,9 @@ let RestaurantOwner = require("./models/restaurantOwner.model");
 let Restaurant = require("./models/restaurnat.model");
 let Address = require("./models/address.model");
 let Manager = require("./models/manager.model");
+
+
+
 
 app.use(cors());
 app.use(express.json());
@@ -37,9 +43,7 @@ const uri = process.env.ATLAS_URI;
 mongoose.connect(uri, { useNewUrlParser: true, useCreateIndex: true });
 
 const connection = mongoose.connection;
-connection.once("open", () => {
-  console.log("MongoDB database connection established successfully");
-});
+
 
 // routers
 const customersRouter = require("./routes/customers");
@@ -53,6 +57,9 @@ const addressRouter = require("./routes/address");
 const managerRouter = require("./routes/manager");
 const storeTimeRouter = require("./routes/storeTime");
 const menuRouter = require("./routes/menu");
+//const { load } = require("dotenv/types");
+const Reservation = require("./models/reservation.model");
+const Table = require("./models/table.model");
 
 // app.use
 app.use(
@@ -582,63 +589,186 @@ app.get("/restaurants/:id", async function (req, res) {
 
 
 
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
 
-
-
-
-
-
-
-
-async function isTableAvaliableAtTimeAsync(table, datetime, eatingTime) {
-  //console.log(datetime);
-  var reservation = Reservation.find({
-    table: table,
-    status: 2,
-    dateTime: {
-      $gte: moment(datetime).add(0 - eatingTime, 'h').toDate(),
-      $lte: moment(datetime).add(eatingTime, 'h').toDate()
+async function loadReservationsToCacheIfNotloadedAsync(){
+  if(cache.get('reservations') !== null) return cache.get('reservations');
+  if(cache.get('loadingReservationsToMemory') !== null) {
+    while(cache.get('loadingReservationsToMemory') !== null) await sleep(100);
+    return (cache.get('reservations'))
+  };
+  
+  cache.put('loadingReservationsToMemory', true);
+  console.log("Loading reservations into memory")
+  var reservations = await Reservation.find({status: 2, dateTime: { //get reservations in db since now
+    $gte: moment(new Date()).toDate(),
     }
+  });
+  var tr = cache.put('reservations', reservations, 86400000, (key, value)=>{ //Reload reservations every day
+    //The reservation is already deleted from cache when this callback fired.
+    console.log("Reloading reservations into memory")
+    loadReservationsToCacheIfNotloadedAsync();
   })
-  if ((await reservation).length > 0) {
-    return false;
+  console.log("Reservations loaded into memory")
+  cache.del('loadingReservationsToMemory');
+  return tr;
+}
+
+//May not be used
+async function loadTablesToCacheIfNotloadedAsync(){
+  if(cache.get('tables') !== null) return cache.get('tables');
+  if(cache.get('loadingTablesToMemory') !== null) {
+    while(cache.get('loadingTablesToMemory') !== null) await sleep(100);
+    return cache.get('tables');
+  };
+  
+  cache.put('loadingTablesToMemory', true);
+  var tables = await Table.find({
+    status: true
+  });
+  cache.put('tables', tables, 86400000, (key, value)=>{ //Reload reservations every day
+    //The reservation is already deleted from cache when this callback fired.
+    loadTablesToCacheIfNotloadedAsync();
+  })
+  cache.del('loadingTablesToMemory');
+}
+
+
+async function getReservationsByTableIdInMemoryAsync(id){
+  var reservations = cache.get('reservations');
+  if(reservations === null){
+    reservations = await loadReservationsToCacheIfNotloadedAsync();
   }
-  //console.log(moment(datetime).add(0-eatingTime, 'h').toDate());
-  //console.log(new Date(datetime))
-  return true;
+  var tr = [];
+  for(var r of reservations){
+    if(r.table === id){
+      tr.push(r);
+    }
+  }
+  return tr;
+}
+
+async function isTableAvailableAtDateTimeInMemory(id, dateTime, eatingTime){
+  if(!eatingTime) eatingTime = 2;
+  var reservations = await getReservationsByTableIdInMemoryAsync(id)
+  var conflicts = [];
+  
+  for(var r of reservations){ //checking confliects
+    if(r.dateTime < dateTime){
+      var b = moment(dateTime).add(eatingTime, 'h').toDate() > dateTime 
+      if(b){
+        conflicts.push(b);
+      }
+    }
+    if(r.dateTime > dateTime){
+      var b = moment(dateTime).add(0-eatingTime, 'h').toDate() < dateTime 
+      if(b){
+        conflicts.push(b);
+      }
+    }
+  }
+  return conflicts.length === 0;
+}
+
+async function getTablesWithRestaurantsUsingPersionAndDateTimeAsync(persons, dateTime){
+  var reservations = cache.get('reservations');
+  if(reservations === null){
+    reservations = await loadReservationsToCacheIfNotloadedAsync();
+  }
+
+  var tables = await Table.find({
+    status: true,
+  }).populate('restaurant');
+
+  var promises = [];
+
+
+  for(var t of tables){
+    //var eatingTime = t.restaurant.eatingTime; //FIXME: after eating time finished
+    var eatingTime = 2;
+    promises.push(isTableAvailableAtDateTimeInMemory(t._id, dateTime, eatingTime))
+  }
+  var tableResults = await Promise.all(promises); //an array of boolean value
+  //TODO: filter tables using number of persons
+
+  //...
+
+  // table results
+  var tr = [];
+  for(var index in tables){
+    if(tableResults[index]) tr.push(tables[index])
+  }
+  return tr;
 }
 
 
 
 
+app.post('/search', async (req, res)=>{
+  try{
+    var availableTables = await getTablesWithRestaurantsUsingPersionAndDateTimeAsync(req.body.numOfPeople, req.body.dateTime);
+    //console.log(availableTables)
+    var restaurants = new Set();
+    
+    for(var t of availableTables){
+      restaurants.add(t.restaurant)
+    }
+    console.log(restaurants)
+    //TODO: filters
+    //..
 
-app.post('/search', (req, res)=>{
-  Restaurant.find()
-  .populate('addressId').populate('categoryId').populate('cuisineStyleId').populate('priceRangeId')
-  .populate('monOpenTimeId')
-  .populate('tueOpenTimeId')
-  .populate('wedOpenTimeId')
-  .populate('thuOpenTimeId')
-  .populate('friOpenTimeId')
-  .populate('satOpenTimeId')
-  .populate('sunOpenTimeId')
-  .populate('monCloseTimeId')
-  .populate('tueCloseTimeId')
-  .populate('wedCloseTimeId')
-  .populate('thuCloseTimeId')
-  .populate('friCloseTimeId')
-  .populate('satCloseTimeId')
-  .populate('sunCloseTimeId')
+    //TODO: keywords
+    //..
+    //keywords requires to access menu table.
+    
+    //TODO: filter out restaurant with status:?
 
-  
-  .then((results)=>{
-    res.json({errcode: 0, restaurants: results})
-  }).catch(err=>{
+    res.json({errcode: 0, restaurants: Array.from(restaurants)});
+  }catch(err){
     console.log(err);
     res.json({errcode: 1, errmsg: err})
-  })
+  }
+  
+  
+  
+  
+  
+  // Restaurant.find()
+  // .populate('addressId').populate('categoryId').populate('cuisineStyleId').populate('priceRangeId')
+  // .populate('monOpenTimeId')
+  // .populate('tueOpenTimeId')
+  // .populate('wedOpenTimeId')
+  // .populate('thuOpenTimeId')
+  // .populate('friOpenTimeId')
+  // .populate('satOpenTimeId')
+  // .populate('sunOpenTimeId')
+  // .populate('monCloseTimeId')
+  // .populate('tueCloseTimeId')
+  // .populate('wedCloseTimeId')
+  // .populate('thuCloseTimeId')
+  // .populate('friCloseTimeId')
+  // .populate('satCloseTimeId')
+  // .populate('sunCloseTimeId')
+  // .then((results)=>{
+  //   res.json({errcode: 0, restaurants: results})
+  // }).catch(err=>{
+  //   console.log(err);
+  //   res.json({errcode: 1, errmsg: err})
+  // })
+
+
+
 })
 
 app.listen(port, () => {
-  console.log(`Server is running on port: ${port}`);
+  connection.once("open",async () => {
+    console.log("MongoDB database connection established successfully");
+    await loadReservationsToCacheIfNotloadedAsync();
+    console.log(cache.get('reservations'))
+    console.log(`Server is running on port: ${port}`);
+  });
 });
