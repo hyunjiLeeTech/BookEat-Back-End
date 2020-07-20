@@ -43,6 +43,14 @@ router.route("/editdiscount").post(async (req, res) => {
     })
 })
 
+router.route("/deletediscount").post(async (req, res) => {
+    console.log("Accessing discount/deletediscounts");
+    Discount.findById(req.body._id).then((discount) => {
+        discount.isActive = false;
+        discount.save();
+    })
+})
+
 async function findRestaurantByIdAsync(id) {
     restaurantOwner = await RestaurantOwner.findOne({ account: id })
 
