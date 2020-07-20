@@ -3,6 +3,21 @@ let Discount = require("../models/discount.model");
 let RestaurantOwner = require("../models/restaurantOwner.model");
 let Restaurant = require("../models/restaurnat.model");
 
+router.route("/getdiscounts").get(async (req, res) => {
+    console.log("Accessing discount/getdiscounts");
+    try {
+        var restaurant = await findRestaurantByIdAsync(req.user._id);
+
+        var discounts = await Discount.find({
+            restaurantId: restaurant._id,
+            isActive: true
+        });
+        res.json({ errcode: 0, discounts: discounts });
+    } catch (err) {
+        res.json({ errcode: 1, errmsg: "internal error" });
+    };
+})
+
 router.route("/adddiscount").post(async (req, res) => {
     console.log("Accessing discount/adddiscount");
 
