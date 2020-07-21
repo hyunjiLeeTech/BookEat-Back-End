@@ -552,32 +552,32 @@ app.get(
 app.get("/restaurants/:id", async function (req, res) {
   try {
     var rest = await Restaurant.findOne({ _id: req.params.id })
-    .populate('addressId').populate('categoryId').populate('cuisineStyleId').populate('priceRangeId')
-    .populate('monOpenTimeId')
-    .populate('tueOpenTimeId')
-    .populate('wedOpenTimeId')
-    .populate('thuOpenTimeId')
-    .populate('friOpenTimeId')
-    .populate('satOpenTimeId')
-    .populate('sunOpenTimeId')
-    .populate('monCloseTimeId')
-    .populate('tueCloseTimeId')
-    .populate('wedCloseTimeId')
-    .populate('thuCloseTimeId')
-    .populate('friCloseTimeId')
-    .populate('satCloseTimeId')
-    .populate('sunCloseTimeId')
-  
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    ;
+      .populate('addressId').populate('categoryId').populate('cuisineStyleId').populate('priceRangeId')
+      .populate('monOpenTimeId')
+      .populate('tueOpenTimeId')
+      .populate('wedOpenTimeId')
+      .populate('thuOpenTimeId')
+      .populate('friOpenTimeId')
+      .populate('satOpenTimeId')
+      .populate('sunOpenTimeId')
+      .populate('monCloseTimeId')
+      .populate('tueCloseTimeId')
+      .populate('wedCloseTimeId')
+      .populate('thuCloseTimeId')
+      .populate('friCloseTimeId')
+      .populate('satCloseTimeId')
+      .populate('sunCloseTimeId')
+
+
+
+
+
+
+
+
+
+
+      ;
     console.log(req.params.id);
     res.json({ errcode: 0, restaurant: rest });
   } catch (err) {
@@ -595,20 +595,21 @@ function sleep(ms) {
   });
 }
 
-async function loadReservationsToCacheIfNotloadedAsync(){
-  if(cache.get('reservations') !== null) return cache.get('reservations');
-  if(cache.get('loadingReservationsToMemory') !== null) {
-    while(cache.get('loadingReservationsToMemory') !== null) await sleep(100);
+async function loadReservationsToCacheIfNotloadedAsync() {
+  if (cache.get('reservations') !== null) return cache.get('reservations');
+  if (cache.get('loadingReservationsToMemory') !== null) {
+    while (cache.get('loadingReservationsToMemory') !== null) await sleep(100);
     return (cache.get('reservations'))
   };
-  
+
   cache.put('loadingReservationsToMemory', true);
   console.log("Loading reservations into memory")
-  var reservations = await Reservation.find({status: 2, dateTime: { //get reservations in db since now
-    $gte: moment(new Date()).toDate(),
+  var reservations = await Reservation.find({
+    status: 2, dateTime: { //get reservations in db since now
+      $gte: moment(new Date()).toDate(),
     }
   });
-  var tr = cache.put('reservations', reservations, 86400000, (key, value)=>{ //Reload reservations every day
+  var tr = cache.put('reservations', reservations, 86400000, (key, value) => { //Reload reservations every day
     //The reservation is already deleted from cache when this callback fired.
     console.log("Reloading reservations into memory")
     loadReservationsToCacheIfNotloadedAsync();
@@ -619,18 +620,18 @@ async function loadReservationsToCacheIfNotloadedAsync(){
 }
 
 //May not be used
-async function loadTablesToCacheIfNotloadedAsync(){
-  if(cache.get('tables') !== null) return cache.get('tables');
-  if(cache.get('loadingTablesToMemory') !== null) {
-    while(cache.get('loadingTablesToMemory') !== null) await sleep(100);
+async function loadTablesToCacheIfNotloadedAsync() {
+  if (cache.get('tables') !== null) return cache.get('tables');
+  if (cache.get('loadingTablesToMemory') !== null) {
+    while (cache.get('loadingTablesToMemory') !== null) await sleep(100);
     return cache.get('tables');
   };
-  
+
   cache.put('loadingTablesToMemory', true);
   var tables = await Table.find({
     status: true
   });
-  cache.put('tables', tables, 86400000, (key, value)=>{ //Reload reservations every day
+  cache.put('tables', tables, 86400000, (key, value) => { //Reload reservations every day
     //The reservation is already deleted from cache when this callback fired.
     loadTablesToCacheIfNotloadedAsync();
   })
@@ -638,35 +639,35 @@ async function loadTablesToCacheIfNotloadedAsync(){
 }
 
 
-async function getReservationsByTableIdInMemoryAsync(id){
+async function getReservationsByTableIdInMemoryAsync(id) {
   var reservations = cache.get('reservations');
-  if(reservations === null){
+  if (reservations === null) {
     reservations = await loadReservationsToCacheIfNotloadedAsync();
   }
   var tr = [];
-  for(var r of reservations){
-    if(r.table === id){
+  for (var r of reservations) {
+    if (r.table.toString() === id.toString()) {
       tr.push(r);
     }
   }
   return tr;
 }
 
-async function isTableAvailableAtDateTimeInMemory(id, dateTime, eatingTime){
-  if(!eatingTime) eatingTime = 2;
+async function isTableAvailableAtDateTimeInMemory(id, dateTime, eatingTime) {
+  if (!eatingTime) eatingTime = 2;
   var reservations = await getReservationsByTableIdInMemoryAsync(id)
   var conflicts = [];
-  
-  for(var r of reservations){ //checking confliects
-    if(r.dateTime < dateTime){
-      var b = moment(dateTime).add(eatingTime, 'h').toDate() > dateTime 
-      if(b){
+  for (var r of reservations) { //checking confliects
+
+    if (r.dateTime < dateTime) {
+      var b = moment(r.dateTime).add(eatingTime, 'h').toDate() > dateTime
+      if (b) {
         conflicts.push(b);
       }
     }
-    if(r.dateTime > dateTime){
-      var b = moment(dateTime).add(0-eatingTime, 'h').toDate() < dateTime 
-      if(b){
+    if (r.dateTime > dateTime) {
+      var b = moment(r.dateTime).add(0 - eatingTime, 'h').toDate() < dateTime
+      if (b) {
         conflicts.push(b);
       }
     }
@@ -674,9 +675,9 @@ async function isTableAvailableAtDateTimeInMemory(id, dateTime, eatingTime){
   return conflicts.length === 0;
 }
 
-async function getTablesWithRestaurantsUsingPersionAndDateTimeAsync(persons, dateTime){
+async function getTablesWithRestaurantsUsingPersionAndDateTimeAsync(persons, dateTime) {
   var reservations = cache.get('reservations');
-  if(reservations === null){
+  if (reservations === null) {
     reservations = await loadReservationsToCacheIfNotloadedAsync();
   }
 
@@ -687,20 +688,35 @@ async function getTablesWithRestaurantsUsingPersionAndDateTimeAsync(persons, dat
   var promises = [];
 
 
-  for(var t of tables){
+  for (var t of tables) {
     //var eatingTime = t.restaurant.eatingTime; //FIXME: after eating time finished
     var eatingTime = 2;
     promises.push(isTableAvailableAtDateTimeInMemory(t._id, dateTime, eatingTime))
   }
   var tableResults = await Promise.all(promises); //an array of boolean value
   //TODO: filter tables using number of persons
+  console.log(persons)
 
+
+  for (var index in tables) {
+    if (persons <= 2 && tables[index].size <= 2) {
+    } else if (persons <= 4 && tables[index].size <= 4) {
+    } else if (
+      tables[index].size - persons > 0 &&
+      tables[index].size - persons < 3
+    ) {
+    } else {
+      tableResults[index] = false;
+    }
+  }
   //...
 
   // table results
+  console.log(tableResults)
+
   var tr = [];
-  for(var index in tables){
-    if(tableResults[index]) tr.push(tables[index])
+  for (var index in tables) {
+    if (tableResults[index]) tr.push(tables[index])
   }
   return tr;
 }
@@ -708,35 +724,34 @@ async function getTablesWithRestaurantsUsingPersionAndDateTimeAsync(persons, dat
 
 
 
-app.post('/search', async (req, res)=>{
-  try{
-    var availableTables = await getTablesWithRestaurantsUsingPersionAndDateTimeAsync(req.body.numOfPeople, req.body.dateTime);
+app.post('/search', async (req, res) => {
+  try {
+    var availableTables = await getTablesWithRestaurantsUsingPersionAndDateTimeAsync(req.body.numberOfPeople, new Date(req.body.dateTime));
     //console.log(availableTables)
     var restaurants = new Set();
-    
-    for(var t of availableTables){
+
+    for (var t of availableTables) {
       restaurants.add(t.restaurant)
     }
-    console.log(restaurants)
     //TODO: filters
     //..
 
     //TODO: keywords
     //..
     //keywords requires to access menu table.
-    
+
     //TODO: filter out restaurant with status:?
 
-    res.json({errcode: 0, restaurants: Array.from(restaurants)});
-  }catch(err){
+    res.json({ errcode: 0, restaurants: Array.from(restaurants) });
+  } catch (err) {
     console.log(err);
-    res.json({errcode: 1, errmsg: err})
+    res.json({ errcode: 1, errmsg: err })
   }
-  
-  
-  
-  
-  
+
+
+
+
+
   // Restaurant.find()
   // .populate('addressId').populate('categoryId').populate('cuisineStyleId').populate('priceRangeId')
   // .populate('monOpenTimeId')
@@ -765,7 +780,7 @@ app.post('/search', async (req, res)=>{
 })
 
 app.listen(port, () => {
-  connection.once("open",async () => {
+  connection.once("open", async () => {
     console.log("MongoDB database connection established successfully");
     await loadReservationsToCacheIfNotloadedAsync();
     console.log(cache.get('reservations'))

@@ -45,6 +45,22 @@ function sleep(ms) {
   });
 }
 
+async function updateInMemoryReservationsAysnc(id, reservation){
+  var reservations = cache.get('reservations')
+  if(reservations === null) return;
+  if(id === null) {
+    reservations.push(reservation);
+    return;
+  }
+  console.log("Updating reservations in memory cache of " + id)
+  for(var index in reservations){
+    if(reservations[index]._id.toString() === id.toString()){
+      reservations[index] = reservation;
+      return;
+    }
+  }
+}
+
 async function getReservationByIdAsync(id) {
   return await Reservation.findOne({ _id: id });
 }
@@ -159,7 +175,8 @@ router.route("/cancelreservation").post(async (req, res) => {
   try {
     var reservation = await getReservationByIdAsync(req.body.reservationId);
     reservation.status = 4;
-    reservation.save().then(() => {
+    reservation.save().then((revs) => {
+      updateInMemoryReservationsAysnc(revs._id, revs);
       res.json({ errcode: 0, errmsg: "success" })
     }).catch(err => {
       res.json({ errcode: 1, errmsg: err })
@@ -234,6 +251,7 @@ router.route("/reserve").post(async (req, res) => {
     })
     rev.save().then(async (revs) => {
       cache.del(table._id);
+      updateInMemoryReservationsAysnc(null, revs)
       var popedRevs = await revs.populate("customer").populate("restaurant").execPopulate();
       res.json({ errcode: 0, reservation: popedRevs })
     }

@@ -3,6 +3,7 @@ let Customer = require("../models/customer.model");
 let Account = require("../models/account.model");
 const Reservation = require("../models/reservation.model");
 const moment = require('moment')
+const cache = require('memory-cache')
 let findAccountByEmailAsyc = async function (email) {
   return await Account.find({ email: email });
 };
@@ -13,6 +14,19 @@ let findCustomerByPhoneNumberAsync = async function (phonenumber) {
 
 let findCustomerByAccount = async function (acc) {
   return await Customer.findOne({ account: acc })
+}
+
+async function updateInMemoryReservationsAysnc(id, reservation){
+  var reservations = cache.get('reservations')
+  if(reservations === null) return;
+  if(id === null) reservations.push(reservation);
+  console.log("Updating reservations in memory cache of" + id)
+  for(var index in reservations){
+    if(reservations[index]._id.toString() === id.toString()){
+      reservations[index] = reservation;
+      return;
+    }
+  }
 }
 
 let addCustomerAsync = async function (obj) {
@@ -143,7 +157,8 @@ router.route("/cancelreservation").post(async (req, res) => {
       return;
     }
     reservation.status = 3;
-    reservation.save().then(() => {
+    reservation.save().then((revs) => {
+      updateInMemoryReservationsAysnc(revs._id, revs)
       res.json({ errcode: 0, errmsg: "success" })
     }).catch(err => {
       res.json({ errcode: 1, errmsg: err })
