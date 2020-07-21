@@ -658,14 +658,18 @@ async function isTableAvailableAtDateTimeInMemory(id, dateTime, eatingTime) {
   var reservations = await getReservationsByTableIdInMemoryAsync(id)
   var conflicts = [];
   for (var r of reservations) { //checking confliects
+    if(r.dateTime.getTime() == dateTime.getTime()){
+      conflicts.push(r);
+      console.log(dateTime+'\n')
+    }
 
-    if (r.dateTime < dateTime) {
+    if (r.dateTime.getTime() < dateTime.getTime()) {
       var b = moment(r.dateTime).add(eatingTime, 'h').toDate() > dateTime
       if (b) {
         conflicts.push(b);
       }
     }
-    if (r.dateTime > dateTime) {
+    if (r.dateTime.getTime() > dateTime.getTime()) {
       var b = moment(r.dateTime).add(0 - eatingTime, 'h').toDate() < dateTime
       if (b) {
         conflicts.push(b);
@@ -695,7 +699,6 @@ async function getTablesWithRestaurantsUsingPersionAndDateTimeAsync(persons, dat
   }
   var tableResults = await Promise.all(promises); //an array of boolean value
   //TODO: filter tables using number of persons
-  console.log(persons)
 
 
   for (var index in tables) {
@@ -709,11 +712,11 @@ async function getTablesWithRestaurantsUsingPersionAndDateTimeAsync(persons, dat
       tableResults[index] = false;
     }
   }
+  console.log(tableResults)
+
   //...
 
   // table results
-  console.log(tableResults)
-
   var tr = [];
   for (var index in tables) {
     if (tableResults[index]) tr.push(tables[index])
@@ -726,6 +729,8 @@ async function getTablesWithRestaurantsUsingPersionAndDateTimeAsync(persons, dat
 
 app.post('/search', async (req, res) => {
   try {
+    console.log(req.body.dateTime)
+    console.log(req.body.numberOfPeople)
     var availableTables = await getTablesWithRestaurantsUsingPersionAndDateTimeAsync(req.body.numberOfPeople, new Date(req.body.dateTime));
     //console.log(availableTables)
     var restaurants = new Set();
