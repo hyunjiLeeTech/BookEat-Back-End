@@ -60,6 +60,7 @@ const menuRouter = require("./routes/menu");
 //const { load } = require("dotenv/types");
 const Reservation = require("./models/reservation.model");
 const Table = require("./models/table.model");
+const { filter } = require("methods");
 
 // app.use
 app.use(
@@ -658,9 +659,9 @@ async function isTableAvailableAtDateTimeInMemory(id, dateTime, eatingTime) {
   var reservations = await getReservationsByTableIdInMemoryAsync(id)
   var conflicts = [];
   for (var r of reservations) { //checking confliects
-    if(r.dateTime.getTime() == dateTime.getTime()){
+    if (r.dateTime.getTime() == dateTime.getTime()) {
       conflicts.push(r);
-      console.log(dateTime+'\n')
+      console.log(dateTime + '\n')
     }
 
     if (r.dateTime.getTime() < dateTime.getTime()) {
@@ -725,12 +726,56 @@ async function getTablesWithRestaurantsUsingPersionAndDateTimeAsync(persons, dat
 }
 
 
+function filterPriceRange(fitlers, set) {
+  if (fitlers.length === 0) return set;
+  var tr = new Set();
+  for (var item of set) {
+    for (var f of fitlers) {
+      if (f.toString() === item.priceRangeId.toString()){
+        console.log('price range add')
+        tr.add(item);
+      }
 
+    }
+  }
+  return tr;
+}
+
+function filterCuisine(fitlers, set) {
+  if (fitlers.length === 0) return set;
+  var tr = new Set();
+  for (var item of set) {
+    for (var f of fitlers) {
+      console.log(item.cuisineStyleId);
+      console.log(f.toString());
+      if (f.toString() === item.cuisineStyleId.toString())
+      {
+        tr.add(item);
+      }
+
+    }
+  }
+
+  return tr;
+}
+
+function filterCategory(fitlers, set) {
+  if (fitlers.length === 0) return set;
+  var tr = new Set();
+  for (var item of set) {
+    for (var f of fitlers) {
+      if (f.toString() === item.categoryId.toString())
+      {
+        tr.add(item);
+      }
+
+    }
+  }
+  return tr;
+}
 
 app.post('/search', async (req, res) => {
   try {
-    console.log(req.body.dateTime)
-    console.log(req.body.numberOfPeople)
     var availableTables = await getTablesWithRestaurantsUsingPersionAndDateTimeAsync(req.body.numberOfPeople, new Date(req.body.dateTime));
     //console.log(availableTables)
     var restaurants = new Set();
@@ -738,16 +783,26 @@ app.post('/search', async (req, res) => {
     for (var t of availableTables) {
       restaurants.add(t.restaurant)
     }
+
     //TODO: filters
     //..
-
+    var priceRanges = req.body.filters.priceRanges;
+    var cuisines = req.body.filters.cuisines;
+    var categories = req.body.filters.categories;
+    console.log(priceRanges)
+    console.log(cuisines)
+    console.log(categories)
+    var tr = filterPriceRange(priceRanges, restaurants);
+    tr = filterCuisine(cuisines, tr);
+    tr = filterCategory(categories, tr);
+    
     //TODO: keywords
     //..
     //keywords requires to access menu table.
 
     //TODO: filter out restaurant with status:?
 
-    res.json({ errcode: 0, restaurants: Array.from(restaurants) });
+    res.json({ errcode: 0, restaurants: Array.from(tr) });
   } catch (err) {
     console.log(err);
     res.json({ errcode: 1, errmsg: err })
