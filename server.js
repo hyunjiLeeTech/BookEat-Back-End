@@ -54,6 +54,7 @@ const managerRouter = require("./routes/manager");
 const storeTimeRouter = require("./routes/storeTime");
 const menuRouter = require("./routes/menu");
 const discountRouter = require("./routes/discount");
+const reviewRouter = require("./routes/review");
 
 // app.use
 app.use(
@@ -93,6 +94,11 @@ app.use(
   discountRouter
 );
 app.use("/storeTime", storeTimeRouter);
+app.use(
+  "/review",
+  passport.authenticate("jwt", { session: false }),
+  reviewRouter
+)
 
 app.get(
   "/logout",
