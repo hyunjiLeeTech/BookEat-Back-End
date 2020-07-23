@@ -122,7 +122,7 @@ router.route('/tableinfo').post(async (req, res) => {
         } else if (obj.numOfPeople <= 4 && tables[i].size <= 4) {
           tables[i].isOpen = true;
         } else if (
-          tables[i].size - obj.numOfPeople > 0 &&
+          tables[i].size - obj.numOfPeople >= 0 &&
           tables[i].size - obj.numOfPeople < 3
         ) {
           tables[i].isOpen = true;
