@@ -61,6 +61,7 @@ const menuRouter = require("./routes/menu");
 const Reservation = require("./models/reservation.model");
 const Table = require("./models/table.model");
 const { filter } = require("methods");
+const Menu = require("./models/menu.model");
 
 // app.use
 app.use(
@@ -706,7 +707,7 @@ async function getTablesWithRestaurantsUsingPersionAndDateTimeAsync(persons, dat
     if (persons <= 2 && tables[index].size <= 2) {
     } else if (persons <= 4 && tables[index].size <= 4) {
     } else if (
-      tables[index].size - persons > 0 &&
+      tables[index].size - persons >= 0 &&
       tables[index].size - persons < 3
     ) {
     } else {
@@ -759,6 +760,8 @@ function filterCuisine(fitlers, set) {
   return tr;
 }
 
+
+
 function filterCategory(fitlers, set) {
   if (fitlers.length === 0) return set;
   var tr = new Set();
@@ -768,7 +771,28 @@ function filterCategory(fitlers, set) {
       {
         tr.add(item);
       }
+    }
+  }
+  return tr;
+}
 
+function filterRestaurantsByKeyword(keyword, restaurants){
+  if(!keyword || keyword === '' || keyword === ' ') return restaurants;
+  var tr = new Set();
+  for(var restaruant of restaurants){
+    if(restaruant.resName.toLowerCase().includes(keyword) || (restaruant.restaurantDescription.toLowerCase().includes(keyword))){
+      tr.add(restaruant)
+    }
+  }
+  return tr;
+}
+
+function filterRestaurantsByMenusUsingKeyword(keyword, menus){
+  if(!keyword || keyword === '' || keyword === ' ') return null;
+  var tr = new Set();
+  for(var menuItem of menus){
+    if(menuItem.menuName.toLowerCase().includes(keyword) || (menuItem.menuDescript.toLowerCase().includes(keyword))){
+      tr.add(menuItem.restaurantId);
     }
   }
   return tr;
@@ -776,6 +800,10 @@ function filterCategory(fitlers, set) {
 
 app.post('/search', async (req, res) => {
   try {
+    var keyword = req.body.keyword;
+    if(!keyword || keyword.length < 1 || keyword ==='null' || keyword ==='undefined') keyword = '';
+    if(keyword) keyword = keyword.toLowerCase();
+    console.log(keyword);
     var availableTables = await getTablesWithRestaurantsUsingPersionAndDateTimeAsync(req.body.numberOfPeople, new Date(req.body.dateTime));
     //console.log(availableTables)
     var restaurants = new Set();
@@ -783,22 +811,41 @@ app.post('/search', async (req, res) => {
     for (var t of availableTables) {
       restaurants.add(t.restaurant)
     }
-
-    //TODO: filters
-    //..
     var priceRanges = req.body.filters.priceRanges;
     var cuisines = req.body.filters.cuisines;
     var categories = req.body.filters.categories;
-    console.log(priceRanges)
-    console.log(cuisines)
-    console.log(categories)
     var tr = filterPriceRange(priceRanges, restaurants);
     tr = filterCuisine(cuisines, tr);
     tr = filterCategory(categories, tr);
     
-    //TODO: keywords
-    //..
-    //keywords requires to access menu table.
+
+    var menus = await Menu.find({restaurantId: {$in: Array.from(tr)}});
+    var menusfiltered = filterRestaurantsByMenusUsingKeyword(keyword, menus, tr) //a list of ID
+    if(menusfiltered === null) { // a list of restaurants 
+      menusfiltered = tr; 
+    }else{ //a list of ID
+      var t = [];
+      for(var id of menusfiltered){
+        tr.forEach(v=>{
+          console.log(v);
+          if(id.toString() === v._id.toString()){
+            t.push(v);
+          }
+        })
+      }
+      menusfiltered = new Set(t);
+    }
+
+    tr = filterRestaurantsByKeyword(keyword, tr);
+
+    //get unionSet of menus filtered restaurant by keywords and menu keywords
+    //menusfiltered is a list of restaurant ID
+    
+    //console.log(tr);
+    //console.log(menusfiltered);
+
+    tr = new Set([...tr, ...menusfiltered]);
+
 
     //TODO: filter out restaurant with status:?
 
@@ -814,20 +861,6 @@ app.post('/search', async (req, res) => {
 
   // Restaurant.find()
   // .populate('addressId').populate('categoryId').populate('cuisineStyleId').populate('priceRangeId')
-  // .populate('monOpenTimeId')
-  // .populate('tueOpenTimeId')
-  // .populate('wedOpenTimeId')
-  // .populate('thuOpenTimeId')
-  // .populate('friOpenTimeId')
-  // .populate('satOpenTimeId')
-  // .populate('sunOpenTimeId')
-  // .populate('monCloseTimeId')
-  // .populate('tueCloseTimeId')
-  // .populate('wedCloseTimeId')
-  // .populate('thuCloseTimeId')
-  // .populate('friCloseTimeId')
-  // .populate('satCloseTimeId')
-  // .populate('sunCloseTimeId')
   // .then((results)=>{
   //   res.json({errcode: 0, restaurants: results})
   // }).catch(err=>{
