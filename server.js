@@ -8,6 +8,14 @@ require("dotenv").config();
 const expressSession = require("express-session");
 const passport = require("./auth/passport-config");
 const jwt = require("jsonwebtoken");
+
+const path = require("path");
+const crypto = require("crypto");
+const multer = require("multer");
+const GridFsStorage = require("multer-gridfs-storage");
+const Grid = require('gridfs-stream');
+const methodOverride = require("method-override");
+
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -30,16 +38,42 @@ app.use(
 );
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(methodOverride('_method'));
 
 mongoose.set("useUnifiedTopology", true);
 
 const uri = process.env.ATLAS_URI;
-mongoose.connect(uri, { useNewUrlParser: true, useCreateIndex: true });
+mongoose.connect(uri, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true });
 
 const connection = mongoose.connection;
 connection.once("open", () => {
+  //init stream
+  gfs = Grid(connection.db, mongoose.mongo);
+  gfs.collection('uploads');
   console.log("MongoDB database connection established successfully");
 });
+
+//create storage engine
+var storage = new GridFsStorage({
+  url: uri,
+  file: (req, file) => {
+    return new Promise((res, ref) => {
+      crypto.randomBytes(16, (err, buf) => {
+        if (err) {
+          return rejects(err);
+        }
+        const filename = buf.toString('hex') + path.extname(file.originalname);
+        const fileInfo = {
+          filename: filename,
+          bucketName: 'uploads'
+        };
+        res(fileInfo);
+      })
+    })
+  }
+})
+
+const upload = multer({ storage });
 
 // routers
 const customersRouter = require("./routes/customers");
@@ -99,6 +133,15 @@ app.use(
   passport.authenticate("jwt", { session: false }),
   reviewRouter
 )
+
+app.post("/addMenuImage", upload.single('menuImage'), (req, res) => {
+  console.log("Accessing /addMenuImage");
+  // console.log(req.body.menuName);
+  // console.log(req.file);
+  menuImage = req.file;
+  // console.log(req.file.id);
+  res.json({ errcode: 0, menuImage: req.file.id });
+});
 
 app.get(
   "/logout",

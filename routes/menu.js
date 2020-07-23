@@ -2,6 +2,7 @@ const router = require("express").Router();
 let Menu = require("../models/menu.model");
 let RestaurantOwner = require("../models/restaurantOwner.model");
 let Restaurant = require("../models/restaurnat.model");
+let MenuImage = require("../models/menuImage.model");
 
 router.route("/getmenus").get(async (req, res) => {
     console.log("Accessing /menu/getmenus");
@@ -14,8 +15,6 @@ router.route("/getmenus").get(async (req, res) => {
             restaurantId: restaurant._id,
             isActive: true
         });
-        console.log("this is menu");
-        console.log(menus);
         res.json({ errcode: 0, menus: menus });
     } catch (err) {
         res.json({ errcode: 1, errmsg: "internal error" });
@@ -24,20 +23,24 @@ router.route("/getmenus").get(async (req, res) => {
 
 router.route("/addmenu").post((req, res) => {
     console.log("Accessing /menu/addmenu");
+    console.log(req.body);
     var accountId = req.user._id;
 
     var menuName = req.body.menuName;
     var menuPrice = req.body.menuPrice;
     var menuDescript = req.body.menuDescript;
+    var menuImageId = req.body.menuImageId;
+
+    //console.log(imageUrl);
 
     var obj = {
         accountId,
         menuName,
         menuPrice,
-        menuDescript
+        menuDescript,
+        menuImageId
     }
 
-    console.log("start add menu async");
     console.log(obj);
 
     addMenuAsync(obj).then(() => {
@@ -80,6 +83,7 @@ async function addMenuAsync(obj) {
     const menuName = obj.menuName;
     const menuPrice = obj.menuPrice;
     const menuDescript = obj.menuDescript;
+    const menuImageId = obj.menuImageId;
     const isActive = true;
 
     let message = "";
@@ -100,7 +104,8 @@ async function addMenuAsync(obj) {
         menuPrice,
         menuDescript,
         isActive,
-        restaurantId: restaurant._id
+        restaurantId: restaurant._id,
+        menuImageId
     })
 
     return await newMenu.save();
