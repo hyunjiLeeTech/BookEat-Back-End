@@ -140,8 +140,34 @@ app.post("/addMenuImage", upload.single('menuImage'), (req, res) => {
   // console.log(req.file);
   menuImage = req.file;
   // console.log(req.file.id);
-  res.json({ errcode: 0, menuImage: req.file.id });
+  res.json({ errcode: 0, menuImage: req.file.filename });
 });
+
+app.get("/getimage", (req, res) => {
+  console.log("Accessing /getimage");
+  var imageId = req.query.imageId;
+
+  gfs.files.findOne({ filename: imageId }, (err, file) => {
+    if (!file) {
+      file = { isImage: false, file: 'File not found' };
+      return res.json({ errcode: 1, image: file })
+    }
+
+    if (file.contentType === 'image/jpeg' || file.contentType === 'image/png') {
+      file.isImage = true;
+      const readstream = gfs.createReadStream(file.filename);
+      readstream.pipe(res);
+    } else {
+      file.isImage = false;
+      return res.json({ errcode: 1, file: 'Not an image file' });
+    }
+  })
+})
+
+app.get('/getimages', (req, res) => {
+  console.log("Accessing /getimages");
+  console.log(req.body);
+})
 
 app.get(
   "/logout",
