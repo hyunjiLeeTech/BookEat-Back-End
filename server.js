@@ -143,10 +143,9 @@ app.post("/addMenuImage", upload.single('menuImage'), (req, res) => {
   res.json({ errcode: 0, menuImage: req.file.filename });
 });
 
-app.get("/getimage", (req, res) => {
-  console.log("Accessing /getimage");
-  var imageId = req.query.imageId;
-
+app.get("/getimage/:id", (req, res) => {
+  console.log("Accessing /getimage/:id");
+  var imageId = req.params.id.trim();
   gfs.files.findOne({ filename: imageId }, (err, file) => {
     if (!file) {
       file = { isImage: false, file: 'File not found' };
