@@ -39,6 +39,8 @@ class tableForClient {
   }
 }
 
+
+
 function sleep(ms) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -69,7 +71,7 @@ async function isTableAvaliableAtTimeAsync(table, datetime, eatingTime) {
   //console.log(datetime);
   var reservation = Reservation.find({
     table: table,
-    status: 2,
+    status: 2, 
     dateTime: {
       $gte: moment(datetime).add(0 - eatingTime, 'h').toDate(),
       $lte: moment(datetime).add(eatingTime, 'h').toDate()
@@ -328,7 +330,33 @@ router.route('/upcomingreservations').get(async (req, res) => {
 })
 
 
-
+router.route('/getTables').get(async (req,res)=>{
+  var u = req.user;
+  console.log(u);
+  if (u.userTypeId === 2) {
+    var rest = Restaurant.findOne({ restaurantOwnerId: await findRestaurantOwnerByAccountAsync(u) });
+    console.log(await findRestaurantOwnerByAccountAsync(u))
+    if (rest === null) {
+      res.json({ errcode: 2, errmsg: 'restaurant not found' })
+      return;
+    }
+    var tables = await Table.find({restaurant: await rest})
+    res.json({ errcode: 0, tables: tables });
+  } else if (u.userTypeId === 3) {
+    var rest = (await findManagerByAccountWithRestaurntAsync(u)).restaurantId;
+    if (rest === null) {
+      res.json({ errcode: 2, errmsg: 'restaurant not found' })
+      return;
+    }
+    var tables = await Table.find({restaurant: await rest})
+    //.where('table.restaurant', u.restaurantId);
+    //console.log(reservations)
+    res.json({ errcode: 0, tables: tables });
+  } else {
+    console.log(401)
+    res.status(401).json({ errcode: 1, errmsg: 'permission denied' })
+  }
+})
 
 router.route("/").get((req, res) => {
   Restaurant.find()
