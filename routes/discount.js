@@ -38,7 +38,7 @@ router.route("/editdiscount").post(async (req, res) => {
     console.log("Accessing discount/editdiscounts");
     Discount.findById(req.body._id).then((discount) => {
         discount.percent = req.body.percent;
-        discount.descript = req.body.descript;
+        discount.description = req.body.descript;
         discount.save();
     })
 })
@@ -60,7 +60,7 @@ async function findRestaurantByIdAsync(id) {
 async function addDiscountAsync(obj) {
     const accountId = obj.accountId;
     const percent = obj.percent;
-    const descript = obj.descript;
+    const description = obj.descript;
     const isActive = true;
 
     let message = "";
@@ -74,7 +74,7 @@ async function addDiscountAsync(obj) {
 
     const newDiscount = new Discount({
         percent,
-        descript,
+        description,
         isActive,
         restaurantId: restaurant._id
     })
