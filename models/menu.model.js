@@ -22,6 +22,7 @@ const menuSchema = new Schema(
             required: true,
         },
         restaurantId: { type: Schema.Types.ObjectId, ref: "Restaurant" },
+        menuImageId: { type: String }
     },
     {
         timestamps: true,

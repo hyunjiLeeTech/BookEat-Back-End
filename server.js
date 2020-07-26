@@ -8,6 +8,14 @@ require("dotenv").config();
 const expressSession = require("express-session");
 const passport = require("./auth/passport-config");
 const jwt = require("jsonwebtoken");
+
+const path = require("path");
+const crypto = require("crypto");
+const multer = require("multer");
+const GridFsStorage = require("multer-gridfs-storage");
+const Grid = require('gridfs-stream');
+const methodOverride = require("method-override");
+
 const app = express();
 const port = process.env.PORT || 5000;
 const cache = require('memory-cache') //in-memory cache
@@ -26,7 +34,7 @@ let Manager = require("./models/manager.model");
 
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
 app.use(
   expressSession({
     secret: "BookEatAwesome",
@@ -36,14 +44,38 @@ app.use(
 );
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(methodOverride('_method'));
 
 mongoose.set("useUnifiedTopology", true);
 
 const uri = process.env.ATLAS_URI;
-mongoose.connect(uri, { useNewUrlParser: true, useCreateIndex: true });
+mongoose.connect(uri, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true });
 
 const connection = mongoose.connection;
 
+
+
+//create storage engine
+var storage = new GridFsStorage({
+  url: uri,
+  file: (req, file) => {
+    return new Promise((res, ref) => {
+      crypto.randomBytes(16, (err, buf) => {
+        if (err) {
+          return rejects(err);
+        }
+        const filename = buf.toString('hex') + path.extname(file.originalname);
+        const fileInfo = {
+          filename: filename,
+          bucketName: 'uploads'
+        };
+        res(fileInfo);
+      })
+    })
+  }
+})
+
+const upload = multer({ storage });
 
 // routers
 const customersRouter = require("./routes/customers");
@@ -62,6 +94,8 @@ const Reservation = require("./models/reservation.model");
 const Table = require("./models/table.model");
 const { filter } = require("methods");
 const Menu = require("./models/menu.model");
+const discountRouter = require("./routes/discount");
+const reviewRouter = require("./routes/review");
 
 // app.use
 app.use(
@@ -94,8 +128,52 @@ app.use(
   "/menu",
   passport.authenticate("jwt", { session: false }),
   menuRouter
-)
+);
+app.use(
+  "/discount",
+  passport.authenticate("jwt", { session: false }),
+  discountRouter
+);
 app.use("/storeTime", storeTimeRouter);
+app.use(
+  "/review",
+  passport.authenticate("jwt", { session: false }),
+  reviewRouter
+)
+
+app.post("/addMenuImage", upload.single('menuImage'), (req, res) => {
+  console.log("Accessing /addMenuImage");
+  // console.log(req.body.menuName);
+  // console.log(req.file);
+  menuImage = req.file;
+  // console.log(req.file.id);
+  res.json({ errcode: 0, menuImage: req.file.filename });
+});
+
+app.get("/getimage/:id", (req, res) => {
+  console.log("Accessing /getimage/:id");
+  var imageId = req.params.id.trim();
+  gfs.files.findOne({ filename: imageId }, (err, file) => {
+    if (!file) {
+      file = { isImage: false, file: 'File not found' };
+      return res.json({ errcode: 1, image: file })
+    }
+
+    if (file.contentType === 'image/jpeg' || file.contentType === 'image/png') {
+      file.isImage = true;
+      const readstream = gfs.createReadStream(file.filename);
+      readstream.pipe(res);
+    } else {
+      file.isImage = false;
+      return res.json({ errcode: 1, file: 'Not an image file' });
+    }
+  })
+})
+
+app.get('/getimages', (req, res) => {
+  console.log("Accessing /getimages");
+  console.log(req.body);
+})
 
 app.get(
   "/logout",
@@ -732,7 +810,7 @@ function filterPriceRange(fitlers, set) {
   var tr = new Set();
   for (var item of set) {
     for (var f of fitlers) {
-      if (f.toString() === item.priceRangeId.toString()){
+      if (f.toString() === item.priceRangeId.toString()) {
         console.log('price range add')
         tr.add(item);
       }
@@ -749,8 +827,7 @@ function filterCuisine(fitlers, set) {
     for (var f of fitlers) {
       console.log(item.cuisineStyleId);
       console.log(f.toString());
-      if (f.toString() === item.cuisineStyleId.toString())
-      {
+      if (f.toString() === item.cuisineStyleId.toString()) {
         tr.add(item);
       }
 
@@ -767,8 +844,7 @@ function filterCategory(fitlers, set) {
   var tr = new Set();
   for (var item of set) {
     for (var f of fitlers) {
-      if (f.toString() === item.categoryId.toString())
-      {
+      if (f.toString() === item.categoryId.toString()) {
         tr.add(item);
       }
     }
@@ -776,22 +852,22 @@ function filterCategory(fitlers, set) {
   return tr;
 }
 
-function filterRestaurantsByKeyword(keyword, restaurants){
-  if(!keyword || keyword === '' || keyword === ' ') return restaurants;
+function filterRestaurantsByKeyword(keyword, restaurants) {
+  if (!keyword || keyword === '' || keyword === ' ') return restaurants;
   var tr = new Set();
-  for(var restaruant of restaurants){
-    if(restaruant.resName.toLowerCase().includes(keyword) || (restaruant.restaurantDescription.toLowerCase().includes(keyword))){
+  for (var restaruant of restaurants) {
+    if (restaruant.resName.toLowerCase().includes(keyword) || (restaruant.restaurantDescription.toLowerCase().includes(keyword))) {
       tr.add(restaruant)
     }
   }
   return tr;
 }
 
-function filterRestaurantsByMenusUsingKeyword(keyword, menus){
-  if(!keyword || keyword === '' || keyword === ' ') return null;
+function filterRestaurantsByMenusUsingKeyword(keyword, menus) {
+  if (!keyword || keyword === '' || keyword === ' ') return null;
   var tr = new Set();
-  for(var menuItem of menus){
-    if(menuItem.menuName.toLowerCase().includes(keyword) || (menuItem.menuDescript.toLowerCase().includes(keyword))){
+  for (var menuItem of menus) {
+    if (menuItem.menuName.toLowerCase().includes(keyword) || (menuItem.menuDescript.toLowerCase().includes(keyword))) {
       tr.add(menuItem.restaurantId);
     }
   }
@@ -801,8 +877,8 @@ function filterRestaurantsByMenusUsingKeyword(keyword, menus){
 app.post('/search', async (req, res) => {
   try {
     var keyword = req.body.keyword;
-    if(!keyword || keyword.length < 1 || keyword ==='null' || keyword ==='undefined') keyword = '';
-    if(keyword) keyword = keyword.toLowerCase();
+    if (!keyword || keyword.length < 1 || keyword === 'null' || keyword === 'undefined') keyword = '';
+    if (keyword) keyword = keyword.toLowerCase();
     console.log(keyword);
     var availableTables = await getTablesWithRestaurantsUsingPersionAndDateTimeAsync(req.body.numberOfPeople, new Date(req.body.dateTime));
     //console.log(availableTables)
@@ -817,18 +893,18 @@ app.post('/search', async (req, res) => {
     var tr = filterPriceRange(priceRanges, restaurants);
     tr = filterCuisine(cuisines, tr);
     tr = filterCategory(categories, tr);
-    
 
-    var menus = await Menu.find({restaurantId: {$in: Array.from(tr)}});
+
+    var menus = await Menu.find({ restaurantId: { $in: Array.from(tr) } });
     var menusfiltered = filterRestaurantsByMenusUsingKeyword(keyword, menus, tr) //a list of ID
-    if(menusfiltered === null) { // a list of restaurants 
-      menusfiltered = tr; 
-    }else{ //a list of ID
+    if (menusfiltered === null) { // a list of restaurants 
+      menusfiltered = tr;
+    } else { //a list of ID
       var t = [];
-      for(var id of menusfiltered){
-        tr.forEach(v=>{
+      for (var id of menusfiltered) {
+        tr.forEach(v => {
           console.log(v);
-          if(id.toString() === v._id.toString()){
+          if (id.toString() === v._id.toString()) {
             t.push(v);
           }
         })
@@ -840,7 +916,7 @@ app.post('/search', async (req, res) => {
 
     //get unionSet of menus filtered restaurant by keywords and menu keywords
     //menusfiltered is a list of restaurant ID
-    
+
     //console.log(tr);
     //console.log(menusfiltered);
 
@@ -871,9 +947,17 @@ app.post('/search', async (req, res) => {
 
 
 })
+// router.route('/search').post((req,res)=>{
+//   var numOfPeople = req.body.numOfPeople;
+//   var dateTime = req.body.dateTime;
+
+// })
 
 app.listen(port, () => {
   connection.once("open", async () => {
+    //init stream
+    gfs = Grid(connection.db, mongoose.mongo);
+    gfs.collection('uploads');
     console.log("MongoDB database connection established successfully");
     await loadReservationsToCacheIfNotloadedAsync();
     console.log(cache.get('reservations'))
