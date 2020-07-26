@@ -10,6 +10,7 @@ const restaurantSchema = new Schema(
     phoneNumber: { type: Number, required: false },
     email: { type: String, required: false },
     status: { type: Number, required: true, default: 3 }, // 2: after sign up. not complete the profile
+    eatingTime: { type: Number, required: false },
 
     // open and close times
     monOpenTimeId: {
