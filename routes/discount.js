@@ -36,9 +36,12 @@ router.route("/adddiscount").post(async (req, res) => {
 
 router.route("/editdiscount").post(async (req, res) => {
     console.log("Accessing discount/editdiscounts");
+    var percent = req.body.percent;
+    var description = req.body.promdescription;
+
     Discount.findById(req.body._id).then((discount) => {
-        discount.percent = req.body.percent;
-        discount.description = req.body.descript;
+        discount.percent = percent;
+        discount.description = description;
         discount.save();
     })
 })
