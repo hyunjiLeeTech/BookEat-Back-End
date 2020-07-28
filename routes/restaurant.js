@@ -11,7 +11,10 @@ const Reservation = require("../models/reservation.model");
 const cache = require('memory-cache')
 const moment = require('moment');
 const Customer = require("../models/customer.model");
-const Manager = require("../models/manager.model")
+const Manager = require("../models/manager.model");
+const FoodOrder = require("../models/foodOrder.model");
+const Menu = require("../models/menu.model");
+
 let findCustomerByAccountAsync = async function (acc) {
   return await Customer.findOne({ account: acc })
 }
@@ -205,6 +208,19 @@ router.route("/confirmattendence").post(async (req, res) => {
   }
 })
 
+router.route('/getfoodorder/:id').get(async (req, res)=>{
+  try {
+    var id = req.params.id
+    var items = await FoodOrder.findOne({_id: id})
+    console.log(items);
+    var menus = await Menu.find({_id: {$in: items.menuItems}})
+    res.json({ errcode: 0, menus: menus })
+  } catch (err) {
+    console.log(err);
+    res.status(500).send("internal error")
+  }
+})
+
 //TODO:  clean code, food items
 router.route("/reserve").post(async (req, res) => {
   var obj = {
@@ -213,7 +229,8 @@ router.route("/reserve").post(async (req, res) => {
     dateTime: new Date(req.body.dateTime),
     tableId: req.body.tableId,
     comments: req.body.comments,
-    customerId: await findCustomerByAccountAsync(req.user._id)
+    customerId: await findCustomerByAccountAsync(req.user._id),
+    menuItems: req.body.menuItems
   }
 
   if (obj.customerId === null) {
@@ -241,6 +258,14 @@ router.route("/reserve").post(async (req, res) => {
   if (table.status) {
     console.log("Saving: " + table._id);
     cache.put(table._id, "true", 30000);
+    var fo= null;
+    if(obj.menuItems !== null){
+      var menuItems = await Menu.find({_id: {$in: obj.menuItems}});
+      fo = await new FoodOrder({
+        menuItems: menuItems,
+      }).save();
+    }
+
     var rev = new Reservation({
       customer: obj.customerId,
       table: table._id,
@@ -250,7 +275,9 @@ router.route("/reserve").post(async (req, res) => {
       reserveTime: new Date(),
       restaurant: table.restaurant,
       status: 2,//0 finished, 1 not attend, 2 upcoming, 3 user cancelled, 4 restaurant cancelled.
+      FoodOrder: fo,
     })
+
     rev.save().then(async (revs) => {
       cache.del(table._id);
       updateInMemoryReservationsAysnc(null, revs)

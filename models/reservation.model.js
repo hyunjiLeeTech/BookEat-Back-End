@@ -10,6 +10,7 @@ const reservationSchema = new Schema({
     comments: {type: String},
     reserveTime: {type: Date, required: true},
     status: {type: Number, default: 2},
+    FoodOrder: {type: Schema.Types.ObjectId, ref: "FoodOrder", required: false}
 });
 
 reservationSchema.pre("save", function(next){

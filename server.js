@@ -666,7 +666,14 @@ app.get("/restaurants/:id", async function (req, res) {
   }
 });
 
-
+app.get('/menus/restaurants/:id', async (req, res) =>{
+  var restaurant = await Restaurant.findOne({ _id: req.params.id })
+  var menus = await Menu.find({
+      restaurantId: restaurant._id,
+      isActive: true
+  });
+  res.json({ errcode: 0, menus: menus });
+})
 
 
 function sleep(ms) {
