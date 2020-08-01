@@ -88,6 +88,21 @@ router.route("/addreview").post(async (req, res) => {
 router.route("/editreview").post(async (req, res) => {
     console.log("Accessing /review/editreview");
     console.log(req.body);
+
+    var comment = req.body.comment;
+    var food = req.body.food;
+    var service = req.body.service;
+    var environment = req.body.environment;
+    var satisfaction = req.body.satisfaction;
+
+    Review.findById(req.body._id).then((review) => {
+        review.comment = comment;
+        review.food = food;
+        review.service = service;
+        review.environment = environment;
+        review.satisfaction = satisfaction;
+        review.save();
+    })
 })
 
 router.route("/deletereview").post(async (req, res) => {
