@@ -24,6 +24,10 @@ const reviewSchema = new Schema(
             type: Number,
             required: false
         },
+        isActive: {
+            type: Boolean,
+            required: true
+        },
         restaurantId: { type: Schema.Types.ObjectId, ref: "Restaurant" },
         customerId: { type: Schema.Types.ObjectId, ref: "Customer" },
     },
