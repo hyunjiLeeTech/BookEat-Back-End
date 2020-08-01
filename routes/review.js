@@ -28,7 +28,19 @@ router.route("/getreviewscustomerside").get(async (req, res) => {
 
 router.route("/getreviewsrestaurantside").get(async (req, res) => {
     console.log("Accessing /review/getreviewsrestaurantside");
-    console.log(req.body);
+    var restaurantId = req.query[0];
+
+    try {
+        var reviews = await Review.find({
+            restaurantId: restaurantId,
+            isActive: true
+        }).sort({ "updatedAt": -1 });
+        console.log(reviews);
+        res.json({ errcode: 0, reviews: reviews });
+
+    } catch (err) {
+        res.json({ errcode: 1, errmsg: "internal error" });
+    }
 })
 
 router.route("/addreview").post(async (req, res) => {
