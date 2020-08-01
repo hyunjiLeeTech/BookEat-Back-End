@@ -150,6 +150,13 @@ app.post("/addMenuImage", upload.single('menuImage'), (req, res) => {
   res.json({ errcode: 0, menuImage: req.file.filename });
 });
 
+app.post("/editMenuImage", upload.single('menuImage'), (req, res) => {
+  console.log("Accessing /editMenuImage");
+  console.log(req.file);
+  menuImage = req.file;
+  res.json({ errcode: 0, menuImage: req.file.filename });
+})
+
 app.get("/getimage/:id", (req, res) => {
   console.log("Accessing /getimage/:id");
   var imageId = req.params.id.trim();
