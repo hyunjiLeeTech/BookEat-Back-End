@@ -157,10 +157,13 @@ app.post("/editMenuImage", upload.single('menuImage'), (req, res) => {
   res.json({ errcode: 0, menuImage: req.file.filename });
 })
 
-app.post("/deleteMenuImage/:id", (req, res) => {
+app.delete("/deleteMenuImage/:id", (req, res) => {
+  console.log("Accessing /deletemenuimage/:id")
   gfs.remove({ _id: req.params.id, root: 'uploads' }, (err, gridStore) => {
     if (err) {
       return res.json({ errcode: 1, errmsg: "Image not found" });
+    } else {
+      return res.json({ errcode: 0, errmsg: "Image delete success" });
     }
   })
 })
