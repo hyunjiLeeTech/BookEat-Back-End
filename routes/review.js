@@ -108,6 +108,12 @@ router.route("/editreview").post(async (req, res) => {
 router.route("/deletereview").post(async (req, res) => {
     console.log("Accessing /review/deletereview");
     console.log(req.body);
+    var reviewId = req.body._id;
+
+    Review.findById(reviewId).then((review) => {
+        review.isActive = false;
+        review.save();
+    })
 })
 
 let findCustomerByAccount = async function (actId) {
