@@ -10,6 +10,20 @@ router.route("/").get(async (req, res) => {
 router.route("/getreviewscustomerside").get(async (req, res) => {
     console.log("Accessing /review/getreviewscustomerside");
     console.log(req.body);
+    var userType = req.user.userTypeId;
+
+    if (userType == 1) {
+        var accountId = req.user._id;
+        var customerId = await findCustomerByAccount(accountId);
+
+        var reviews = await Review.find({
+            customerId: customerId,
+            isActive: true
+        });
+        res.json({ errcode: 0, reviews: reviews });
+    } else {
+        res.json({ errcode: 1, errmsg: "This is customer page" });
+    }
 })
 
 router.route("/getreviewsrestaurantside").get(async (req, res) => {
@@ -33,6 +47,7 @@ router.route("/addreview").post(async (req, res) => {
         var environment = req.body.environment;
         var satisfaction = req.body.satisfaction;
         var restaurantId = req.body.resId;
+        var isActive = true;
 
         var newReview = new Review({
             comment,
@@ -40,6 +55,7 @@ router.route("/addreview").post(async (req, res) => {
             service,
             environment,
             satisfaction,
+            isActive,
             restaurantId,
             customerId
         })
