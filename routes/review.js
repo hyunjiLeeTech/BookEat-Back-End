@@ -34,7 +34,9 @@ router.route("/getreviewsrestaurantside").get(async (req, res) => {
         var reviews = await Review.find({
             restaurantId: restaurantId,
             isActive: true
-        }).sort({ "updatedAt": -1 });
+        })
+            .sort({ "updatedAt": -1 })
+            .populate("customerId");
         console.log(reviews);
         res.json({ errcode: 0, reviews: reviews });
 
@@ -56,7 +58,7 @@ router.route("/addreview").post(async (req, res) => {
         var comment = req.body.comment;
         var food = req.body.food;
         var service = req.body.service;
-        var environment = req.body.environment;
+        var environment = req.body.enviroment;
         var satisfaction = req.body.satisfaction;
         var restaurantId = req.body.resId;
         var isActive = true;
@@ -92,7 +94,7 @@ router.route("/editreview").post(async (req, res) => {
     var comment = req.body.comment;
     var food = req.body.food;
     var service = req.body.service;
-    var environment = req.body.environment;
+    var environment = req.body.enviroment;
     var satisfaction = req.body.satisfaction;
 
     Review.findById(req.body._id).then((review) => {
