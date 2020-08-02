@@ -45,6 +45,29 @@ router.route("/getreviewsrestaurantside").get(async (req, res) => {
     }
 })
 
+router.route("/getreviewsresownermanager").get(async (req, res) => {
+    console.log("Accessing /review/getreviewsresownermanager");
+    var userType = req.user.userTypeId;
+    var accountId = req.user._id;
+
+    try {
+        var restaurant;
+        if (userType == 2) { // restaurant owner
+            restaurant = await findRestaurantByIdAsync(accountId);
+        } else if (userType == 3) { // manager
+            restaurant = await findRestaurantByManagerIdAsync(accountId);
+        }
+
+        var reviews = await Review.find({
+            restaurantId: restaurant._id,
+            isActive: true
+        });
+        res.json({ errcode: 0, reviews: reviews });
+    } catch (err) {
+        res.json({ errcode: 1, errmsg: "internal error" });
+    }
+})
+
 router.route("/addreview").post(async (req, res) => {
     console.log("Accessing /review/addreview");
     console.log(req.body);
@@ -120,6 +143,18 @@ router.route("/deletereview").post(async (req, res) => {
 
 let findCustomerByAccount = async function (actId) {
     return await Customer.findOne({ account: actId });
+}
+
+async function findRestaurantByIdAsync(id) {
+    restaurantOwner = await RestaurantOwner.findOne({ account: id })
+
+    return await Restaurant.findOne({ restaurantOwnerId: restaurantOwner._id });
+}
+
+async function findRestaurantByManagerIdAsync(id) {
+    manager = await Manager.findOne({ accountId: id });
+
+    return await Restaurant.findById(manager.restaurantId);
 }
 
 module.exports = router;
