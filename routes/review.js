@@ -63,7 +63,9 @@ router.route("/getreviewsresownermanager").get(async (req, res) => {
         var reviews = await Review.find({
             restaurantId: restaurant._id,
             isActive: true
-        });
+        })
+            .sort({ "updatedAt": -1 })
+            .populate("customerId");
         res.json({ errcode: 0, reviews: reviews });
     } catch (err) {
         res.json({ errcode: 1, errmsg: "internal error" });
