@@ -165,6 +165,24 @@ app.post("/addMenuImage", upload.single('menuImage'), (req, res) => {
   res.json({ errcode: 0, menuImage: req.file.filename });
 });
 
+app.post("/editMenuImage", upload.single('menuImage'), (req, res) => {
+  console.log("Accessing /editMenuImage");
+  console.log(req.file);
+  menuImage = req.file;
+  res.json({ errcode: 0, menuImage: req.file.filename });
+})
+
+app.delete("/deleteMenuImage/:id", (req, res) => {
+  console.log("Accessing /deletemenuimage/:id")
+  gfs.remove({ _id: req.params.id, root: 'uploads' }, (err, gridStore) => {
+    if (err) {
+      return res.json({ errcode: 1, errmsg: "Image not found" });
+    } else {
+      return res.json({ errcode: 0, errmsg: "Image delete success" });
+    }
+  })
+})
+
 app.get("/getimage/:id", (req, res) => {
   console.log("Accessing /getimage/:id");
   var imageId = req.params.id.trim();

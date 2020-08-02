@@ -3,30 +3,30 @@ const Schema = mongoose.Schema;
 
 const reviewSchema = new Schema(
     {
-        date: {
-            type: Date,
-            required: true,
-        },
-        content: {
+        comment: {
             type: String,
             required: true,
             maxLength: 32,
         },
-        foodRate: {
+        food: {
             type: Number,
             required: false,
         },
-        serviceRate: {
+        environment: {
             type: Number,
             required: false,
         },
-        satisfactionRate: {
+        service: {
             type: Number,
             required: false
         },
-        environmentRate: {
+        satisfaction: {
             type: Number,
             required: false
+        },
+        isActive: {
+            type: Boolean,
+            required: true
         },
         restaurantId: { type: Schema.Types.ObjectId, ref: "Restaurant" },
         customerId: { type: Schema.Types.ObjectId, ref: "Customer" },
