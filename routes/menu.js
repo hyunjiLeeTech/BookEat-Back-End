@@ -3,7 +3,6 @@ let Menu = require("../models/menu.model");
 let RestaurantOwner = require("../models/restaurantOwner.model");
 let Restaurant = require("../models/restaurnat.model");
 let Manager = require("../models/manager.model");
-let MenuImage = require("../models/menuImage.model");
 
 router.route("/getmenus").get(async (req, res) => {
     console.log("Accessing /menu/getmenus");
