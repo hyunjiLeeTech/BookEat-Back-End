@@ -40,8 +40,8 @@ router.route("/getmenus").get(async (req, res) => {
 
 router.route("/addmenu").post((req, res) => {
     console.log("Accessing /menu/addmenu");
-    console.log(req.body);
     var accountId = req.user._id;
+    var userType = req.user.userTypeId;
 
     var menuName = req.body.menuName;
     var menuPrice = req.body.menuPrice;
@@ -52,6 +52,7 @@ router.route("/addmenu").post((req, res) => {
 
     var obj = {
         accountId,
+        userType,
         menuName,
         menuPrice,
         menuDescript,
@@ -103,6 +104,8 @@ async function findRestaurantByManagerIdAsync(id) {
 
 async function addMenuAsync(obj) {
     const accountId = obj.accountId;
+    const usrTypeId = obj.userType;
+
     const menuName = obj.menuName;
     const menuPrice = obj.menuPrice;
     const menuDescript = obj.menuDescript;
@@ -120,7 +123,8 @@ async function addMenuAsync(obj) {
         throw message;
     }
 
-    restaurant = await findRestaurantByIdAsync(accountId);
+    if (usrTypeId == 2) restaurant = await findRestaurantByIdAsync(accountId);
+    else if (usrTypeId == 3) restaurant = await findRestaurantByManagerIdAsync(accountId);
 
     const newMenu = new Menu({
         menuName,
