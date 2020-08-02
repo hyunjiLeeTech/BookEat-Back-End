@@ -47,10 +47,25 @@ passport.use(new LocalStrategy(
                 console.log(err);
                 return done(err);
             }
+
             if (!result || result === null) {
                 console.log("user not found");
                 return done(null, false, { message: 'user not found.' });
             }
+
+            if (result.emailVerified === false) {
+                console.log(result.emailVerified)
+                console.log("Not verified email address");
+                return done(null, false, { message: 'Please Verify the email first. ' });
+            }
+
+            if (result.isActive === false) {
+                console.log(result.isActive)
+                console.log("Inactived account");
+                return done(null, false, { message: 'account inactived. the account may be deleted' });
+            }
+
+
             if (result.password != password) {
                 console.log("incorrect password.")
                 console.log("Account: " + result);
