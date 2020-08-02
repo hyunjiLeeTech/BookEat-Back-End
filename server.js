@@ -20,6 +20,19 @@ const app = express();
 const port = process.env.PORT || 5000;
 const cache = require('memory-cache') //in-memory cache
 const moment = require('moment')
+const nodemailer = require('nodemailer')
+const frontEndUrl = 'http://localhost:3000' //FIXME: testing, change to heroku url
+
+
+
+
+var transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'a745874355@gmail.com',
+    pass: 'Aa7758521'
+  }
+});
 
 
 //database models
@@ -29,6 +42,8 @@ let RestaurantOwner = require("./models/restaurantOwner.model");
 let Restaurant = require("./models/restaurnat.model");
 let Address = require("./models/address.model");
 let Manager = require("./models/manager.model");
+
+
 
 
 
@@ -303,6 +318,40 @@ let addCustomerAsync = async function (obj) {
   return await newCustomer.save();
 };
 
+app.get('/verifyEmail/:id', async (req, res)=>{
+  var aid = req.params.id;
+  var acc = await Account.findOne({_id: aid})
+  if(acc.emailVerified === false){
+    acc.emailVerified = true;
+    acc.save().then(()=>{
+      res.json({errcode: 0, errmsg: 'email verified'})
+    })
+  }else{
+    res.json({errcode: 1, errmsg: 'email is already verified'})
+  }
+})
+
+
+
+/**
+ * @param {String} destination email send to
+ * @param {String} htmlMessage a HTML message in String format
+ * @param {(error, info) => void} callback call back
+ */
+async function sendActiveEmail(destination, htmlMessage, callback){
+  var mailOptions = {
+    from: 'a745874355@gmail.com',
+    to: destination,
+    subject: 'Active your BookEat Account',
+    html: htmlMessage
+  };
+  
+  transporter.sendMail(mailOptions, function(error, info){
+    if(typeof callback === 'function')
+    callback(error, info);
+  });
+}
+
 // post request (/customers/add)
 app.post("/customersignup", (req, res) => {
   const firstName = req.body.firstname;
@@ -320,7 +369,13 @@ app.post("/customersignup", (req, res) => {
     userTypeId,
   };
   addCustomerAsync(obj)
-    .then(() => {
+    .then((acc) => {
+      
+      var msg = '<h1>Welcome ' +obj.firstName+ ' ' + obj.lastName+ '</h1><p>'+frontEndUrl+'/EmailConfirmation/'+ acc.account +'</p>'
+      sendActiveEmail(obj.email, msg, function(error, info){
+        if(error) console.log(error)
+        else console.log(info.response)
+      })
       res.json({ errcode: 0, errmsg: "success" });
     })
     .catch((err) => {
@@ -494,6 +549,8 @@ app.post("/restaurantownersignup", (req, res) => {
   };
   addRestaurantOwnerAsync(obj)
     .then(() => {
+      var msg = '<h1>Welcome  </h1><p>'+frontEndUrl+'/EmailConfirmation/'+ acc.account +'</p>'
+      sendActiveEmail(obj.email, msg);
       res.json({ errcode: 0, errmsg: "success" });
     })
     .catch((err) => {
@@ -596,6 +653,8 @@ app.post("/managersignup", (req, res) => {
 
   addManagerAsync(obj)
     .then(() => {
+      var msg = '<h1>Welcome  </h1><p>'+ frontEndUrl +'/EmailConfirmation/'+ acc.account +'</p>'
+      sendActiveEmail(obj.email, msg);
       res.json({ errcode: 0, errmsg: "success" });
     })
     .catch((err) => {
