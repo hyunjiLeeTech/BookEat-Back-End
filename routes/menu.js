@@ -2,20 +2,38 @@ const router = require("express").Router();
 let Menu = require("../models/menu.model");
 let RestaurantOwner = require("../models/restaurantOwner.model");
 let Restaurant = require("../models/restaurnat.model");
+let Manager = require("../models/manager.model");
 let MenuImage = require("../models/menuImage.model");
 
 router.route("/getmenus").get(async (req, res) => {
     console.log("Accessing /menu/getmenus");
     var actId = req.user._id;
+    var userType = req.user.userTypeId;
+
+    console.log("user type: " + userType);
 
     try {
-        var restaurant = await findRestaurantByIdAsync(actId);
+        if (userType == 2) {
 
-        var menus = await Menu.find({
-            restaurantId: restaurant._id,
-            isActive: true
-        });
-        res.json({ errcode: 0, menus: menus });
+            var restaurant = await findRestaurantByIdAsync(actId);
+
+            var menus = await Menu.find({
+                restaurantId: restaurant._id,
+                isActive: true
+            });
+            res.json({ errcode: 0, menus: menus });
+
+        } else if (userType == 3) {
+            var restaurant = await findRestaurantByManagerIdAsync(actId);
+
+            var menus = await Menu.find({
+                restaurantId: restaurant._id,
+                isActive: true
+            });
+            res.json({ errcode: 0, menus: menus });
+        } else {
+            res.json({ errcode: 1, errmsg: 'this is get menus for res owner and manager' });
+        }
     } catch (err) {
         res.json({ errcode: 1, errmsg: "internal error" });
     }
@@ -76,6 +94,12 @@ async function findRestaurantByIdAsync(id) {
     restaurantOwner = await RestaurantOwner.findOne({ account: id })
 
     return await Restaurant.findOne({ restaurantOwnerId: restaurantOwner._id });
+}
+
+async function findRestaurantByManagerIdAsync(id) {
+    manager = await Manager.findOne({ accountId: id });
+
+    return await Restaurant.findById(manager.restaurantId);
 }
 
 async function addMenuAsync(obj) {
