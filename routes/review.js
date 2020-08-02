@@ -2,6 +2,8 @@ const router = require("express").Router();
 let Review = require("../models/review.model");
 let Customer = require("../models/customer.model");
 let Restaurant = require("../models/restaurnat.model");
+let RestaurantOwner = require("../models/restaurantOwner.model");
+let Manager = require("../models/manager.model");
 
 router.route("/").get(async (req, res) => {
     console.log("this is test");
