@@ -21,7 +21,8 @@ router.route("/getreviewscustomerside").get(async (req, res) => {
         var reviews = await Review.find({
             customerId: customerId,
             isActive: true
-        }).sort({ "updatedAt": -1 });
+        }).sort({ "updatedAt": -1 })
+            .populate("restaurantId");
         res.json({ errcode: 0, reviews: reviews });
     } else {
         res.json({ errcode: 1, errmsg: "This is customer page" });
