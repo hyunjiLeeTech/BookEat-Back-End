@@ -128,6 +128,12 @@ const restaurantSchema = new Schema(
       ref: "PriceRange",
       required: false,
     },
+
+    // pictures
+    pictures: [{
+      type: String,
+      required: false
+    }]
   },
   {
     timestamps: true,
