@@ -208,12 +208,12 @@ router.route("/confirmattendence").post(async (req, res) => {
   }
 })
 
-router.route('/getfoodorder/:id').get(async (req, res)=>{
+router.route('/getfoodorder/:id').get(async (req, res) => {
   try {
     var id = req.params.id
-    var items = await FoodOrder.findOne({_id: id})
+    var items = await FoodOrder.findOne({ _id: id })
     console.log(items);
-    var menus = await Menu.find({_id: {$in: items.menuItems}})
+    var menus = await Menu.find({ _id: { $in: items.menuItems } })
     res.json({ errcode: 0, menus: menus })
   } catch (err) {
     console.log(err);
@@ -258,9 +258,9 @@ router.route("/reserve").post(async (req, res) => {
   if (table.status) {
     console.log("Saving: " + table._id);
     cache.put(table._id, "true", 30000);
-    var fo= null;
-    if(obj.menuItems !== null){
-      var menuItems = await Menu.find({_id: {$in: obj.menuItems}});
+    var fo = null;
+    if (obj.menuItems !== null) {
+      var menuItems = await Menu.find({ _id: { $in: obj.menuItems } });
       fo = await new FoodOrder({
         menuItems: menuItems,
       }).save();
@@ -394,6 +394,11 @@ router.route("/").get((req, res) => {
 
 router.route("/editresprofile").post((req, res) => {
   var _id = req.user._id;
+  let picture = "";
+
+  if (req.body.isPicture) {
+    picture = req.body.resPictures;
+  }
 
   var obj = {
     accountId: _id,
@@ -434,6 +439,9 @@ router.route("/editresprofile").post((req, res) => {
 
     //price range
     priceName: req.body.priceRange,
+
+    //pictures
+    pictures: picture,
   };
 
   editRestaurantProfile(obj)
@@ -462,6 +470,8 @@ let editRestaurantProfile = async (obj) => {
     friCloseId,
     satCloseId,
     sunCloseId;
+
+  let pictures = obj.pictures;
 
   //regular expression for validation
   const regExpPhone = RegExp(
@@ -705,6 +715,9 @@ let editRestaurantProfile = async (obj) => {
 
     // for address
     addrId = restaurant.addressId;
+
+    //pictures
+    restaurant.pictures = pictures;
 
     restaurant.save();
   });
