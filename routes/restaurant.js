@@ -393,6 +393,7 @@ router.route("/").get((req, res) => {
 });
 
 router.route("/editresprofile").post((req, res) => {
+  console.log("Accesssing /restaurant/editresprofile")
   var _id = req.user._id;
   let picture = "";
 
@@ -716,8 +717,10 @@ let editRestaurantProfile = async (obj) => {
     // for address
     addrId = restaurant.addressId;
 
-    //pictures
-    restaurant.pictures = pictures;
+    // pictures
+    for (var i = 0; i < pictures.length; i++) {
+      restaurant.pictures.push(pictures[i]);
+    }
 
     restaurant.save();
   });
