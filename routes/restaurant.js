@@ -88,6 +88,21 @@ async function isTableAvaliableAtTimeAsync(table, datetime, eatingTime) {
   return true;
 }
 
+router.post("/updaterespictures", async (req, res) => {
+  console.log("Accessing /restaruant/updaterespictures");
+  var _id = req.user._id;
+  var deletedImage = req.body.id;
+  var resOwner = await RestaurantOwner.findOne({ account: _id });
+
+  await Restaurant.findOne({ restaurantOwnerId: resOwner._id }).then(
+    (restaurant) => {
+      restaurant.pictures = restaurant.pictures.filter(p => p != deletedImage);
+      restaurant.save();
+    }
+  );
+
+})
+
 router.post('/getRestaurantOwnerAndManagerViaRestaurantId', async (req, res) => {
   console.log("IN")
   var ro = await (await Restaurant.findOne({ _id: req.body.restaurantId }).populate("restaurantOwnerId")).restaurantOwnerId.populate("account").execPopulate();
