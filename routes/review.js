@@ -132,6 +132,10 @@ router.route("/editreview").post(async (req, res) => {
         review.environment = environment;
         review.satisfaction = satisfaction;
         review.save();
+        res.json({ errcode: 0, errmsg: 'success edit review' })
+    }).catch(err => {
+        console.log(err)
+        res.json({ errcode: 1, errmsg: err })
     })
 })
 
@@ -143,6 +147,10 @@ router.route("/deletereview").post(async (req, res) => {
     Review.findById(reviewId).then((review) => {
         review.isActive = false;
         review.save();
+        res.json({ errcode: 0, errmsg: 'success delete review' })
+    }).catch(err => {
+        console.log(err)
+        res.json({ errcode: 1, errmsg: err })
     })
 })
 
