@@ -3,7 +3,8 @@ let Customer = require("../models/customer.model");
 let Account = require("../models/account.model");
 const Reservation = require("../models/reservation.model");
 const moment = require('moment')
-const cache = require('memory-cache')
+const cache = require('memory-cache');
+const { json } = require("express");
 let findAccountByEmailAsyc = async function (email) {
   return await Account.find({ email: email });
 };
@@ -152,7 +153,7 @@ router.route("/editcustomerprofile").post(async (req, res) => {
 router.route("/cancelreservation").post(async (req, res) => {
   try {
     var reservation = await getReservationByIdWithCustomerAsync(req.body.reservationId);
-    if(reservation.customer.account !== req.user._id){
+    if(reservation.customer.account.toString() !== req.user._id.toString()){
       res.status(401).send('access denied');
       return;
     }
@@ -175,17 +176,12 @@ router.route("/reservationsofpast60days").get(async (req, res) => {
   var u = req.user;
   //console.log(u);
   try {
-    var reservations = await Reservation.find({ customer: await findCustomerByAccount(u) });
+    var reservations = await Reservation.find({ customer: await findCustomerByAccount(u) }).populate('restaurant');
     res.json({ errcode: 0, reservations: reservations })
   } catch (err) {
     console.error(err);
     res.json({ errcode: 1, errmsg: "internal error" })
   }
-})
-
-//TODO: cancel reservation by customer
-router.route("/cancelreservation").post((req, res) => {
-
 })
 
 //
@@ -237,6 +233,22 @@ router.route("/add").post((req, res) => {
       res.json({ errcode: 1, errmsg: err });
     });
 });
+
+router.get('/delete', async (req,res) =>{
+  console.log('deleting account')
+  var u = req.user;
+  u = await Account.findById(u._id)
+  var customer = await Customer.findOne({account: u._id})
+  var reservations = await Reservation.find({customer: customer._id, status: 2});
+  if(reservations.length > 0){
+    return res.json({errcode: 1, errmsg: 'Please finish all reservations before delete your account'})
+  }else{
+    u.isActive = false;
+    u.token = '';
+    await u.save();
+    return res.json({errcode: 0, errmsg: 'success'})
+  }
+})
 
 router.route("/:id").get((req, res) => {
   Customer.findById(req.params.id)

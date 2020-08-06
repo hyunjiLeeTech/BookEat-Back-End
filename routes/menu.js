@@ -103,6 +103,7 @@ router.route("/deletemenu").post((req, res) => {
         console.log(err)
         res.json({ errcode: 1, errmsg: 'failed to save' })
     })
+
 })
 
 async function findRestaurantByIdAsync(id) {

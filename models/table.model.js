@@ -8,6 +8,7 @@ const tableSchema = new Schema({
   isNearWindow: {type: Boolean},
   isQuiet: {type: Boolean},
   rid: {type: Number, default: 0}, //Id in restaurant
+  isDeleted: {type: Boolean, default: false}
 });
 
 tableSchema.pre('save', async function(next){
