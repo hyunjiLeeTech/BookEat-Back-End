@@ -62,7 +62,7 @@ router.route("/addmenu").post((req, res) => {
     console.log(obj);
 
     addMenuAsync(obj).then(() => {
-        res.json({ errcode: 0, errmsg: "success" })
+        res.json({ errcode: 0, errmsg: "success add menu" })
     }).catch(err => {
         res.json({ errcode: 1, errmsg: err })
     });
@@ -80,7 +80,7 @@ router.route("/editmenu").post((req, res) => {
             menu.menuImageId = req.body.menuImageId
         }
         menu.save();
-        res.json({ errcode: 0, errmsg: 'success' })
+        res.json({ errcode: 0, errmsg: 'success edit menu' })
     }).catch(err => {
         console.log(err)
         res.json({ errcode: 1, errmsg: 'failed to save' })
@@ -95,6 +95,10 @@ router.route("/deletemenu").post((req, res) => {
     Menu.findById(req.body._id).then((menu) => {
         menu.isActive = false;
         menu.save();
+        res.json({ errcode: 0, errmsg: 'success delete menu' })
+    }).catch(err => {
+        console.log(err)
+        res.json({ errcode: 1, errmsg: 'failed to save' })
     })
 })
 
