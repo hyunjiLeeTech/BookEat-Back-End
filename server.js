@@ -111,6 +111,7 @@ const { filter } = require("methods");
 const Menu = require("./models/menu.model");
 const discountRouter = require("./routes/discount");
 const reviewRouter = require("./routes/review");
+const { update } = require("./models/customer.model");
 
 // app.use
 app.use(
@@ -1037,7 +1038,22 @@ app.post('/search', async (req, res) => {
 
 // })
 
+//test funciton 
+async function t(){
+  console.log("updating db")
+  var ts = await Table.find()
+  var p = [];
+  for(var t of ts){
+    t.isDeleted = false
+    p.push(t.save())
+  }
+  Promise.all(p).then(()=>{
+    console.log('updated')
+  }).catch(err => console.log(err))
+}
+
 app.listen(port, () => {
+  //t();
   connection.once("open", async () => {
     //init stream
     gfs = Grid(connection.db, mongoose.mongo);

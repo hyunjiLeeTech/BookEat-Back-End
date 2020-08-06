@@ -85,6 +85,7 @@ passport.use(new JwtStrategy(opts, function(req, jwt_payload, done) {
     }catch(err){
         return done(err) 
     }
+    if(requestToken === '') return done(null, false, {message: 'illegal token'});
     Account.findOne({ _id: jwt_payload._id }, function (err, result) {
         if (err) {
             console.log(err);
@@ -99,6 +100,14 @@ passport.use(new JwtStrategy(opts, function(req, jwt_payload, done) {
             console.log("Request token: " + requestToken)
             console.log("Expected token(in db): " + result.token);
             return done(null, false, { message: "invalied access token."});
+        }
+        if (result.isActive === false) {
+            console.log(result.isActive)
+            console.log("Inactived account");
+            return done(null, false, { message: 'account inactived. the account may be deleted' });
+        }
+        if(result.token === ''){
+            return done(null, false, {message: 'illegal token'});
         }
         console.log("User: " + result.email + " vaildated by JWT stragtegy")
         return done(null, result);

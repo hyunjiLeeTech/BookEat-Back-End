@@ -62,6 +62,28 @@ router.route("/deletemanager").post(async (req, res) => {
   }
 });
 
+router.get('/deleteAccount', async (req,res)=>{
+  var u = req.user;
+  u = await Account.findById(u._id)
+  if (u.userTypeId === 2) {
+    var rest = Restaurant.findOne({ restaurantOwnerId: await findRestaurantOwnerByAccountAsync(u) });
+    console.log(await findRestaurantOwnerByAccountAsync(u))
+    if (rest === null) {
+      res.json({ errcode: 2, errmsg: 'restaurant not found' })
+      return;
+    }
+    var reservations = await Reservation.find({ status: 2, restaurant: (await rest)._id, }).populate('customer').populate('table');
+    if(reservations.length > 0){
+      return res.json({errocde: 1, errmsg: 'Please finish all reservations before closing restaurant'})
+    }else{
+      u.isActive = false;
+      u.token = '';
+      await u.save()
+      return res.json({errcode: 0, errmsg: 'success'})
+    }
+  }
+})
+
 router.route("/getrestaurantinfo").get((req, res) => {
   var _id = req.user._id;
   //query from db

@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
-const Schema = mongoose.Schema;
+const Restaurant = require("./restaurnat.model");
+const Schema = mongoose.Schema; 
 
 const accountSchema = new Schema(
   {
@@ -15,18 +16,24 @@ const accountSchema = new Schema(
   }
 );
 
-accountSchema.pre('save', function(next){
+accountSchema.pre('save', async function(next){
   if(this.emailVerified === undefined) {
     console.log(this.emailVerified) 
     this.emailVerified = false;
   }
-  //TODO: delete customer account and restaurant owner account
+  //delete customer account and restaurant owner account
+  if(this.isActive === false){
+    if(this.userTypeId === 1){
 
-  //TODO: inactive restaurant.
-
-
-
-
+    }else if(this.userTypeId === 2){ //owner
+      //Deactive restaurant.
+      var res = await Restaurant.findOne({restaurantOwnerId: this._id})
+      if(res){
+        res.status = 4;
+        await res.save()
+      }
+    }
+  }
   next();
 })
 
