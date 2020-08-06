@@ -75,6 +75,7 @@ router.route("/editmenu").post((req, res) => {
     console.log(req.body);
 
     Menu.findById(req.body._id).then((menu) => {
+        menu.foodType = req.body.menuType;
         menu.menuName = req.body.menuName;
         menu.menuPrice = req.body.menuPrice;
         menu.menuDescript = req.body.menuDescript;
