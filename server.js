@@ -112,6 +112,7 @@ const Menu = require("./models/menu.model");
 const discountRouter = require("./routes/discount");
 const reviewRouter = require("./routes/review");
 const { update } = require("./models/customer.model");
+const Discount = require("./models/discount.model");
 
 // app.use
 app.use(
@@ -573,12 +574,14 @@ app.post("/restaurantownersignup", (req, res) => {
     status,
   };
   addRestaurantOwnerAsync(obj)
-    .then(() => {
+    .then((acc) => {
       var msg = '<h1>Welcome  </h1><p>' + frontEndUrl + '/EmailConfirmation/' + acc.account + '</p>'
       sendActiveEmail(obj.email, msg);
       res.json({ errcode: 0, errmsg: "success" });
     })
     .catch((err) => {
+      console.log('error adding restaurant owner account')
+      console.log(err)
       res.json({ errcode: 1, errmsg: err });
     });
 });
@@ -732,18 +735,9 @@ app.get("/restaurants/:id", async function (req, res) {
       .populate('satCloseTimeId')
       .populate('sunCloseTimeId')
 
-
-
-
-
-
-
-
-
-
-      ;
+    var discount = await Discount.findOne({restaurantId: rest._id});
     console.log(req.params.id);
-    res.json({ errcode: 0, restaurant: rest });
+    res.json({ errcode: 0, restaurant: rest, discount: discount });
   } catch (err) {
     console.log(err);
     res.json({ errcode: 1, err: err });
