@@ -76,16 +76,16 @@ router.route("/editmenu").post((req, res) => {
         menu.menuName = req.body.menuName;
         menu.menuPrice = req.body.menuPrice;
         menu.menuDescript = req.body.menuDescript;
-        if(req.body.menuImageId){ //TODO: fix the code if needed Jane
+        if (req.body.menuImageId) {
             menu.menuImageId = req.body.menuImageId
         }
         menu.save();
-        res.json({errcode: 0, errmsg: 'success'})
+        res.json({ errcode: 0, errmsg: 'success' })
     }).catch(err => {
         console.log(err)
-        res.json({errcode: 1, errmsg: 'failed to save'})
+        res.json({ errcode: 1, errmsg: 'failed to save' })
     })
-    
+
 })
 
 router.route("/deletemenu").post((req, res) => {
