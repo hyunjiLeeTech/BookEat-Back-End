@@ -120,10 +120,10 @@ router.route("/editreview").post(async (req, res) => {
     console.log(req.body);
 
     var comment = req.body.comment;
-    var food = req.body.food;
-    var service = req.body.service;
-    var environment = req.body.enviroment;
-    var satisfaction = req.body.satisfaction;
+    var food = req.body.foodRate;
+    var service = req.body.serviceRate;
+    var environment = req.body.environmentRate;
+    var satisfaction = req.body.satisfactionRate;
 
     Review.findById(req.body._id).then((review) => {
         review.comment = comment;
