@@ -153,7 +153,7 @@ app.use(
 app.use("/storeTime", storeTimeRouter);
 app.use(
   "/review",
-  //passport.authenticate("jwt", { session: false }),
+  passport.authenticate("jwt", { session: false }),
   reviewRouter
 )
 

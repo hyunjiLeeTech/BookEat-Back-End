@@ -75,7 +75,6 @@ router.route("/getreviewsresownermanager").get(async (req, res) => {
 
 router.route("/addreview").post(async (req, res) => {
     console.log("Accessing /review/addreview");
-    console.log(req.body);
 
     var userType = req.user.userTypeId;
 
