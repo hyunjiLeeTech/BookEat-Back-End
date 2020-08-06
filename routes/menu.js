@@ -2,20 +2,37 @@ const router = require("express").Router();
 let Menu = require("../models/menu.model");
 let RestaurantOwner = require("../models/restaurantOwner.model");
 let Restaurant = require("../models/restaurnat.model");
-let MenuImage = require("../models/menuImage.model");
+let Manager = require("../models/manager.model");
 
 router.route("/getmenus").get(async (req, res) => {
     console.log("Accessing /menu/getmenus");
     var actId = req.user._id;
+    var userType = req.user.userTypeId;
+
+    console.log("user type: " + userType);
 
     try {
-        var restaurant = await findRestaurantByIdAsync(actId);
+        if (userType == 2) {
 
-        var menus = await Menu.find({
-            restaurantId: restaurant._id,
-            isActive: true
-        });
-        res.json({ errcode: 0, menus: menus });
+            var restaurant = await findRestaurantByIdAsync(actId);
+
+            var menus = await Menu.find({
+                restaurantId: restaurant._id,
+                isActive: true
+            });
+            res.json({ errcode: 0, menus: menus });
+
+        } else if (userType == 3) {
+            var restaurant = await findRestaurantByManagerIdAsync(actId);
+
+            var menus = await Menu.find({
+                restaurantId: restaurant._id,
+                isActive: true
+            });
+            res.json({ errcode: 0, menus: menus });
+        } else {
+            res.json({ errcode: 1, errmsg: 'this is get menus for res owner and manager' });
+        }
     } catch (err) {
         res.json({ errcode: 1, errmsg: "internal error" });
     }
@@ -23,8 +40,8 @@ router.route("/getmenus").get(async (req, res) => {
 
 router.route("/addmenu").post((req, res) => {
     console.log("Accessing /menu/addmenu");
-    console.log(req.body);
     var accountId = req.user._id;
+    var userType = req.user.userTypeId;
 
     var menuName = req.body.menuName;
     var menuPrice = req.body.menuPrice;
@@ -35,6 +52,7 @@ router.route("/addmenu").post((req, res) => {
 
     var obj = {
         accountId,
+        userType,
         menuName,
         menuPrice,
         menuDescript,
@@ -58,16 +76,16 @@ router.route("/editmenu").post((req, res) => {
         menu.menuName = req.body.menuName;
         menu.menuPrice = req.body.menuPrice;
         menu.menuDescript = req.body.menuDescript;
-        if(req.body.menuImageId){ //TODO: fix the code if needed Jane
+        if (req.body.menuImageId) {
             menu.menuImageId = req.body.menuImageId
         }
         menu.save();
-        res.json({errcode: 0, errmsg: 'success'})
+        res.json({ errcode: 0, errmsg: 'success' })
     }).catch(err => {
         console.log(err)
-        res.json({errcode: 1, errmsg: 'failed to save'})
+        res.json({ errcode: 1, errmsg: 'failed to save' })
     })
-    
+
 })
 
 router.route("/deletemenu").post((req, res) => {
@@ -86,8 +104,16 @@ async function findRestaurantByIdAsync(id) {
     return await Restaurant.findOne({ restaurantOwnerId: restaurantOwner._id });
 }
 
+async function findRestaurantByManagerIdAsync(id) {
+    manager = await Manager.findOne({ accountId: id });
+
+    return await Restaurant.findById(manager.restaurantId);
+}
+
 async function addMenuAsync(obj) {
     const accountId = obj.accountId;
+    const usrTypeId = obj.userType;
+
     const menuName = obj.menuName;
     const menuPrice = obj.menuPrice;
     const menuDescript = obj.menuDescript;
@@ -105,7 +131,8 @@ async function addMenuAsync(obj) {
         throw message;
     }
 
-    restaurant = await findRestaurantByIdAsync(accountId);
+    if (usrTypeId == 2) restaurant = await findRestaurantByIdAsync(accountId);
+    else if (usrTypeId == 3) restaurant = await findRestaurantByManagerIdAsync(accountId);
 
     const newMenu = new Menu({
         menuName,

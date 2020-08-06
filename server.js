@@ -157,6 +157,12 @@ app.use(
   reviewRouter
 )
 
+app.post("/addResPictures", upload.array('resPictures[]', 10), (req, res) => {
+  console.log("Accessing /addResPictures");
+  resPictures = req.files;
+  res.json({ errcode: 0, resPictures: resPictures });
+})
+
 app.post("/addMenuImage", upload.single('menuImage'), (req, res) => {
   console.log("Accessing /addMenuImage");
   // console.log(req.body.menuName);
@@ -173,8 +179,8 @@ app.post("/editMenuImage", upload.single('menuImage'), (req, res) => {
   res.json({ errcode: 0, menuImage: req.file.filename });
 })
 
-app.delete("/deleteMenuImage/:id", (req, res) => {
-  console.log("Accessing /deletemenuimage/:id")
+app.delete("/deleteImage/:id", (req, res) => {
+  console.log("Accessing /deleteimage/:id")
   gfs.remove({ _id: req.params.id, root: 'uploads' }, (err, gridStore) => {
     if (err) {
       return res.json({ errcode: 1, errmsg: "Image not found" });
@@ -337,16 +343,16 @@ let addCustomerAsync = async function (obj) {
   return await newCustomer.save();
 };
 
-app.get('/verifyEmail/:id', async (req, res)=>{
+app.get('/verifyEmail/:id', async (req, res) => {
   var aid = req.params.id;
-  var acc = await Account.findOne({_id: aid})
-  if(acc.emailVerified === false){
+  var acc = await Account.findOne({ _id: aid })
+  if (acc.emailVerified === false) {
     acc.emailVerified = true;
-    acc.save().then(()=>{
-      res.json({errcode: 0, errmsg: 'email verified'})
+    acc.save().then(() => {
+      res.json({ errcode: 0, errmsg: 'email verified' })
     })
-  }else{
-    res.json({errcode: 1, errmsg: 'email is already verified'})
+  } else {
+    res.json({ errcode: 1, errmsg: 'email is already verified' })
   }
 })
 
@@ -357,17 +363,17 @@ app.get('/verifyEmail/:id', async (req, res)=>{
  * @param {String} htmlMessage a HTML message in String format
  * @param {(error, info) => void} callback call back
  */
-async function sendActiveEmail(destination, htmlMessage, callback){
+async function sendActiveEmail(destination, htmlMessage, callback) {
   var mailOptions = {
     from: 'a745874355@gmail.com',
     to: destination,
     subject: 'Active your BookEat Account',
     html: htmlMessage
   };
-  
-  transporter.sendMail(mailOptions, function(error, info){
-    if(typeof callback === 'function')
-    callback(error, info);
+
+  transporter.sendMail(mailOptions, function (error, info) {
+    if (typeof callback === 'function')
+      callback(error, info);
   });
 }
 
@@ -389,10 +395,10 @@ app.post("/customersignup", (req, res) => {
   };
   addCustomerAsync(obj)
     .then((acc) => {
-      
-      var msg = '<h1>Welcome ' +obj.firstName+ ' ' + obj.lastName+ '</h1><p>'+frontEndUrl+'/EmailConfirmation/'+ acc.account +'</p>'
-      sendActiveEmail(obj.email, msg, function(error, info){
-        if(error) console.log(error)
+
+      var msg = '<h1>Welcome ' + obj.firstName + ' ' + obj.lastName + '</h1><p>' + frontEndUrl + '/EmailConfirmation/' + acc.account + '</p>'
+      sendActiveEmail(obj.email, msg, function (error, info) {
+        if (error) console.log(error)
         else console.log(info.response)
       })
       res.json({ errcode: 0, errmsg: "success" });
@@ -568,7 +574,7 @@ app.post("/restaurantownersignup", (req, res) => {
   };
   addRestaurantOwnerAsync(obj)
     .then(() => {
-      var msg = '<h1>Welcome  </h1><p>'+frontEndUrl+'/EmailConfirmation/'+ acc.account +'</p>'
+      var msg = '<h1>Welcome  </h1><p>' + frontEndUrl + '/EmailConfirmation/' + acc.account + '</p>'
       sendActiveEmail(obj.email, msg);
       res.json({ errcode: 0, errmsg: "success" });
     })
@@ -672,7 +678,7 @@ app.post("/managersignup", (req, res) => {
 
   addManagerAsync(obj)
     .then(() => {
-      var msg = '<h1>Welcome  </h1><p>'+ frontEndUrl +'/EmailConfirmation/'+ acc.account +'</p>'
+      var msg = '<h1>Welcome  </h1><p>' + frontEndUrl + '/EmailConfirmation/' + acc.account + '</p>'
       sendActiveEmail(obj.email, msg);
       res.json({ errcode: 0, errmsg: "success" });
     })
@@ -744,11 +750,11 @@ app.get("/restaurants/:id", async function (req, res) {
   }
 });
 
-app.get('/menus/restaurants/:id', async (req, res) =>{
+app.get('/menus/restaurants/:id', async (req, res) => {
   var restaurant = await Restaurant.findOne({ _id: req.params.id })
   var menus = await Menu.find({
-      restaurantId: restaurant._id,
-      isActive: true
+    restaurantId: restaurant._id,
+    isActive: true
   });
   res.json({ errcode: 0, menus: menus });
 })
