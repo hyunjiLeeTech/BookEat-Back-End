@@ -574,7 +574,7 @@ app.post("/restaurantownersignup", (req, res) => {
   };
   addRestaurantOwnerAsync(obj)
     .then(() => {
-      var msg = '<h1>Welcome  </h1><p>' + frontEndUrl + '/EmailConfirmation/' + acc.account + '</p>'
+      var msg = '<h1>Welcome  </h1><p>' + frontEndUrl + '/EmailConfirmation/' + obj.email + '</p>'
       sendActiveEmail(obj.email, msg);
       res.json({ errcode: 0, errmsg: "success" });
     })
@@ -678,7 +678,7 @@ app.post("/managersignup", (req, res) => {
 
   addManagerAsync(obj)
     .then(() => {
-      var msg = '<h1>Welcome  </h1><p>' + frontEndUrl + '/EmailConfirmation/' + acc.account + '</p>'
+      var msg = '<h1>Welcome  </h1><p>' + frontEndUrl + '/EmailConfirmation/' + obj.email + '</p>'
       sendActiveEmail(obj.email, msg);
       res.json({ errcode: 0, errmsg: "success" });
     })
@@ -1045,15 +1045,15 @@ app.post('/search', async (req, res) => {
 // })
 
 //test funciton 
-async function t(){
+async function t() {
   console.log("updating db")
   var ts = await Table.find()
   var p = [];
-  for(var t of ts){
+  for (var t of ts) {
     t.isDeleted = false
     p.push(t.save())
   }
-  Promise.all(p).then(()=>{
+  Promise.all(p).then(() => {
     console.log('updated')
   }).catch(err => console.log(err))
 }
