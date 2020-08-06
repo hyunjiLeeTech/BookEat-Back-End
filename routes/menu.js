@@ -47,6 +47,7 @@ router.route("/addmenu").post((req, res) => {
     var menuPrice = req.body.menuPrice;
     var menuDescript = req.body.menuDescript;
     var menuImageId = req.body.menuImageId;
+    var menuFoodType = req.body.menuType; // TODO: check 
 
     //console.log(imageUrl);
 
@@ -56,6 +57,7 @@ router.route("/addmenu").post((req, res) => {
         menuName,
         menuPrice,
         menuDescript,
+        menuFoodType,
         menuImageId
     }
 
@@ -122,6 +124,7 @@ async function addMenuAsync(obj) {
     const menuPrice = obj.menuPrice;
     const menuDescript = obj.menuDescript;
     const menuImageId = obj.menuImageId;
+    const foodType = obj.menuFoodType;
     const isActive = true;
 
     let message = "";
@@ -143,6 +146,7 @@ async function addMenuAsync(obj) {
         menuPrice,
         menuDescript,
         isActive,
+        foodType,
         restaurantId: restaurant._id,
         menuImageId
     })
