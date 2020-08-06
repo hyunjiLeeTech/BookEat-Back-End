@@ -43,6 +43,10 @@ router.route("/editdiscount").post(async (req, res) => {
         discount.percent = percent;
         discount.description = description;
         discount.save();
+        res.json({ errcode: 0, errmsg: 'success edit discount' })
+    }).catch(err => {
+        console.log(err)
+        res.json({ errcode: 1, errmsg: 'failed to save' })
     })
 })
 
@@ -51,6 +55,10 @@ router.route("/deletediscount").post(async (req, res) => {
     Discount.findById(req.body._id).then((discount) => {
         discount.isActive = false;
         discount.save();
+        res.json({ errcode: 0, errmsg: 'success delete discount' })
+    }).catch(err => {
+        console.log(err)
+        res.json({ errcode: 1, errmsg: err })
     })
 })
 
