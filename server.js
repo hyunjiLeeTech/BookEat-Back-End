@@ -533,8 +533,8 @@ let addRestaurantOwnerAsync = async function (obj) {
     restaurantOwnerId: restOwner._id,
     addressId: address._id,
   });
-
-  return await newRestaurant.save();
+  await newRestaurant.save()
+  return restOwner;
 };
 
 app.post("/restaurantownersignup", (req, res) => {
