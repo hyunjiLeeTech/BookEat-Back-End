@@ -24,6 +24,14 @@ const reviewSchema = new Schema(
             type: Number,
             required: false
         },
+        pictures: [{
+            type: String,
+            required: false
+        }],
+        isPicture: {
+            type: Boolean,
+            default: false
+        },
         isActive: {
             type: Boolean,
             required: true

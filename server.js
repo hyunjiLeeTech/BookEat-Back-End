@@ -157,10 +157,10 @@ app.use(
   reviewRouter
 )
 
-app.post("/addResPictures", upload.array('resPictures[]', 10), (req, res) => {
-  console.log("Accessing /addResPictures");
-  resPictures = req.files;
-  res.json({ errcode: 0, resPictures: resPictures });
+app.post("/addPictures", upload.array('pictures[]', 10), (req, res) => {
+  console.log("Accessing /addPictures");
+  pictures = req.files;
+  res.json({ errcode: 0, pictures: pictures });
 })
 
 app.post("/addMenuImage", upload.single('menuImage'), (req, res) => {

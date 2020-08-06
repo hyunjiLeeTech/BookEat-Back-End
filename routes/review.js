@@ -88,7 +88,15 @@ router.route("/addreview").post(async (req, res) => {
         var environment = req.body.enviroment;
         var satisfaction = req.body.satisfaction;
         var restaurantId = req.body.resId;
+        var isPicture = req.body.isPicture;
         var isActive = true;
+
+        // picture
+        let pictures = "";
+
+        if (isPicture) {
+            pictures = req.body.reviewPictures;
+        }
 
         var newReview = new Review({
             comment,
@@ -96,7 +104,9 @@ router.route("/addreview").post(async (req, res) => {
             service,
             environment,
             satisfaction,
+            pictures,
             isActive,
+            isPicture,
             restaurantId,
             customerId
         })
