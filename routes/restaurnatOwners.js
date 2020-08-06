@@ -4,17 +4,21 @@ let Account = require("../models/account.model");
 let Address = require("../models/address.model");
 const Restaurant = require("../models/restaurnat.model");
 let Manager = require("../models/manager.model");
+const { find } = require("../models/restaurnat.model");
+const Reservation = require("../models/reservation.model");
 
 let findAccountByEmailAsyc = async function (email) {
   return await Account.find({ email: email });
 };
-
 let findRestaurantById = async function (actId) {
   let resOwner = await RestaurantOwner.findOne({ account: actId });
   console.log("ResOwner: " + resOwner._id);
   return await Restaurant.findOne({ restaurantOwnerId: resOwner._id });
 };
 
+async function findRestaurantOwnerByAccountAsync(acc) {
+  return await RestaurantOwner.findOne({ account: acc });
+}
 //get request (/customers)
 router.route("/").get((req, res) => {
   RestaurantOwner.find()
@@ -62,24 +66,33 @@ router.route("/deletemanager").post(async (req, res) => {
   }
 });
 
-router.get('/deleteAccount', async (req,res)=>{
+router.get('/deleteAccount', async (req, res) => {
   var u = req.user;
   u = await Account.findById(u._id)
   if (u.userTypeId === 2) {
-    var rest = Restaurant.findOne({ restaurantOwnerId: await findRestaurantOwnerByAccountAsync(u) });
+    var rest = await Restaurant.findOne({ restaurantOwnerId: await findRestaurantOwnerByAccountAsync(u) });
     console.log(await findRestaurantOwnerByAccountAsync(u))
     if (rest === null) {
       res.json({ errcode: 2, errmsg: 'restaurant not found' })
       return;
     }
+    var managers = await Manager.find({ restaurantId: (await rest)._id })
+
     var reservations = await Reservation.find({ status: 2, restaurant: (await rest)._id, }).populate('customer').populate('table');
-    if(reservations.length > 0){
-      return res.json({errocde: 1, errmsg: 'Please finish all reservations before closing restaurant'})
-    }else{
+    if (reservations.length > 0) {
+      return res.json({ errocde: 1, errmsg: 'Please finish all reservations before closing restaurant' })
+    } else {
+      for (var m of managers) {
+        var a = await Account.findById(m.accountId);
+        if (a) {
+          a.isActive = false;
+          a.save();
+        }
+      }
       u.isActive = false;
       u.token = '';
       await u.save()
-      return res.json({errcode: 0, errmsg: 'success'})
+      return res.json({ errcode: 0, errmsg: 'success' })
     }
   }
 })

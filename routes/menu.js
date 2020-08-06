@@ -95,7 +95,12 @@ router.route("/deletemenu").post((req, res) => {
     Menu.findById(req.body._id).then((menu) => {
         menu.isActive = false;
         menu.save();
+        res.json({errcode: 0, errmsg: 'success'})
+    }).catch(err => {
+        console.log(err)
+        res.json({errcode: 1, err: 'err'})
     })
+
 })
 
 async function findRestaurantByIdAsync(id) {
