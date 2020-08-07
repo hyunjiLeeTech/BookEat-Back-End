@@ -42,7 +42,7 @@ let RestaurantOwner = require("./models/restaurantOwner.model");
 let Restaurant = require("./models/restaurnat.model");
 let Address = require("./models/address.model");
 let Manager = require("./models/manager.model");
-
+let Review = require("./models/review.model");
 
 
 
@@ -171,6 +171,25 @@ app.post("/addMenuImage", upload.single('menuImage'), (req, res) => {
   // console.log(req.file.id);
   res.json({ errcode: 0, menuImage: req.file.filename });
 });
+
+app.get("/getReviewsResSide", async (req, res) => {
+  console.log("Accessing /getReviewsResSide");
+  var restaurantId = req.query.resId;
+
+  try {
+    var reviews = await Review.find({
+      restaurantId: restaurantId,
+      isActive: true
+    })
+      .sort({ "updatedAt": -1 })
+      .populate("customerId");
+    console.log(reviews);
+    res.json({ errcode: 0, reviews: reviews });
+
+  } catch (err) {
+    res.json({ errcode: 1, errmsg: "internal error" });
+  }
+})
 
 app.post("/editMenuImage", upload.single('menuImage'), (req, res) => {
   console.log("Accessing /editMenuImage");
