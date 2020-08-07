@@ -158,10 +158,10 @@ app.use(
   reviewRouter
 )
 
-app.post("/addResPictures", upload.array('resPictures[]', 10), (req, res) => {
-  console.log("Accessing /addResPictures");
-  resPictures = req.files;
-  res.json({ errcode: 0, resPictures: resPictures });
+app.post("/addPictures", upload.array('pictures[]', 10), (req, res) => {
+  console.log("Accessing /addPictures");
+  pictures = req.files;
+  res.json({ errcode: 0, pictures: pictures });
 })
 
 app.post("/addMenuImage", upload.single('menuImage'), (req, res) => {
@@ -691,7 +691,7 @@ app.post("/managersignup", (req, res) => {
 
   addManagerAsync(obj)
     .then(() => {
-      var msg = '<h1>Welcome  </h1><p>' + frontEndUrl + '/EmailConfirmation/' + acc.account + '</p>'
+      var msg = '<h1>Welcome  </h1><p>' + frontEndUrl + '/EmailConfirmation/' + obj.email + '</p>'
       sendActiveEmail(obj.email, msg);
       res.json({ errcode: 0, errmsg: "success" });
     })
