@@ -218,8 +218,8 @@ router.route("/updatetable").post(async (req, res) => {
     return;
   }
   var table = await Table.findById(req.body._id);
-  if(!table) return res.status(404.1).send('table not fund')
-  if(table.restaurant.toString() !== rest._id.toString()){
+  if (!table) return res.status(404.1).send('table not fund')
+  if (table.restaurant.toString() !== rest._id.toString()) {
     res.status(401).send('permission denied');
     return;
   }
@@ -252,8 +252,8 @@ router.route("/deleteTable").post(async (req, res) => {
   }
 
   var table = await Table.findById(req.body.tableId);
-  if(!table) return res.status(404).send('table not fund')
-  if(table.restaurant.toString() !== rest._id.toString()){
+  if (!table) return res.status(404).send('table not fund')
+  if (table.restaurant.toString() !== rest._id.toString()) {
     res.status(401).send('permission denied');
     return;
   }
@@ -308,8 +308,8 @@ router.route("/confirmattendence").post(async (req, res) => {
 router.route('/getfoodorder/:id').get(async (req, res) => {
   try {
     var id = req.params.id
-    var items = await FoodOrder.findOne({_id: id})
-    if(!items) return res.json({errcode: 1, errmsg: 'food order not found'})
+    var items = await FoodOrder.findOne({ _id: id })
+    if (!items) return res.json({ errcode: 1, errmsg: 'food order not found' })
     console.log(items);
     var menus = await Menu.find({ _id: { $in: items.menuItems } })
     res.json({ errcode: 0, menus: menus })
@@ -507,6 +507,15 @@ router.route("/editresprofile").post((req, res) => {
     description: req.body.description,
     eatingTime: req.body.eatingTime,
 
+    //open or close
+    monIsClose: req.body.monIsClose,
+    tueIsClose: req.body.tueIsClose,
+    wedIsClose: req.body.wedIsCose,
+    thuIsClose: req.body.thuIsClose,
+    friIsClose: req.body.friIsClose,
+    satIsClose: req.body.satIsClose,
+    sunIsClose: req.body.sunIsClose,
+
     //open and close times
     monOpenTime: req.body.monOpenTime,
     tueOpenTime: req.body.tueOpenTime,
@@ -571,6 +580,15 @@ let editRestaurantProfile = async (obj) => {
     sunCloseId;
 
   let pictures = obj.pictures;
+
+  // open or close
+  let monIsClose = obj.monIsClose,
+    tueIsClose = obj.tueIsClose,
+    wedIsClose = obj.webIsClose,
+    thuIsClose = obj.thuIsClose,
+    friIsClose = obj.friIsClose,
+    satIsClose = obj.satIsClose,
+    sunIsClose = obj.sunIsClose;
 
   //regular expression for validation
   const regExpPhone = RegExp(
@@ -819,6 +837,15 @@ let editRestaurantProfile = async (obj) => {
     for (var i = 0; i < pictures.length; i++) {
       restaurant.pictures.push(pictures[i]);
     }
+
+    // open or close time
+    restaurant.monIsClose = monIsClose;
+    restaurant.tueIsClose = tueIsClose;
+    restaurant.wedIsClose = wedIsClose;
+    restaurant.thuIsClose = thuIsClose;
+    restaurant.friIsClose = friIsClose;
+    restaurant.satIsClose = satIsClose;
+    restaurant.sunIsClose = sunIsClose;
 
     restaurant.save();
   });
