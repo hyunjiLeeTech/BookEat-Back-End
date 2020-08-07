@@ -181,13 +181,27 @@ app.post("/editMenuImage", upload.single('menuImage'), (req, res) => {
 
 app.delete("/deleteImage/:id", (req, res) => {
   console.log("Accessing /deleteimage/:id")
-  gfs.remove({ _id: req.params.id, root: 'uploads' }, (err, gridStore) => {
+  gfs.remove({ filename: req.params.id, root: 'uploads' }, (err, gridStore) => {
     if (err) {
       return res.json({ errcode: 1, errmsg: "Image not found" });
     } else {
       return res.json({ errcode: 0, errmsg: "Image delete success" });
     }
   })
+})
+
+app.delete("/deleteImages", (req, res) => {
+  console.log("Accessing /deleteimages");
+  var images = req.query.pictures;
+  for (var i = 0; i < images.length; i++) {
+    gfs.remove({ filename: images[i], root: 'uploads' }, (err, gridStore) => {
+      if (err) {
+        return res.json({ errcode: 1, errmsg: "Image not found" });
+      }
+    })
+  }
+
+  res.json({ errcode: 0, errmsg: "Images delete success" });
 })
 
 app.get("/getimage/:id", (req, res) => {
