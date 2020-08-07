@@ -154,7 +154,7 @@ app.use(
 app.use("/storeTime", storeTimeRouter);
 app.use(
   "/review",
-  //passport.authenticate("jwt", { session: false }),
+  passport.authenticate("jwt", { session: false }),
   reviewRouter
 )
 
@@ -307,6 +307,7 @@ let addCustomerAsync = async function (obj) {
     email,
     password,
     userTypeId,
+    isActive: true,
   });
 
   let message = "";
@@ -376,6 +377,14 @@ async function sendActiveEmail(destination, htmlMessage, callback) {
     if (typeof callback === 'function')
       callback(error, info);
   });
+}
+/** 
+* @param {(error, info) => void} callback call back
+*/
+function sendEmail(options, callback) {
+  transporter.sendMail(options, function (error, info) {
+    if (typeof callback === 'function') callback(error, info)
+  })
 }
 
 // post request (/customers/add)
@@ -460,6 +469,7 @@ let addRestaurantOwnerAsync = async function (obj) {
     email,
     password,
     userTypeId,
+    isActive: true,
   });
 
   const newAddress = new Address({
@@ -735,7 +745,7 @@ app.get("/restaurants/:id", async function (req, res) {
       .populate('satCloseTimeId')
       .populate('sunCloseTimeId')
 
-    var discount = await Discount.findOne({restaurantId: rest._id});
+    var discount = await Discount.findOne({ restaurantId: rest._id });
     console.log(req.params.id);
     res.json({ errcode: 0, restaurant: rest, discount: discount });
   } catch (err) {
@@ -1028,9 +1038,6 @@ app.post('/search', async (req, res) => {
   //   console.log(err);
   //   res.json({errcode: 1, errmsg: err})
   // })
-
-
-
 })
 // router.route('/search').post((req,res)=>{
 //   var numOfPeople = req.body.numOfPeople;
@@ -1039,20 +1046,135 @@ app.post('/search', async (req, res) => {
 // })
 
 //test funciton 
-async function t(){
+async function t() {
   console.log("updating db")
   var ts = await Table.find()
   var p = [];
-  for(var t of ts){
+  for (var t of ts) {
     t.isDeleted = false
     p.push(t.save())
   }
-  Promise.all(p).then(()=>{
+  Promise.all(p).then(() => {
     console.log('updated')
   }).catch(err => console.log(err))
 }
 
+app.post('/resetPasswordWithTimestamp', async (req, res) => {
+  var id = req.body.accountId;
+  var timestamp = req.body.timestamp;
+  var newPassword = req.body.newPassword;
+  console.log(timestamp)
+  console.log(newPassword)
+  console.log(id)
+  await sleep(2000);
+  Account.findById(id).then((acc) => {
+    if (acc.resetTimeStamp !== 0 && acc.resetTimeStamp.toString() === timestamp.toString()) {
+      acc.password = newPassword;
+      acc.resetTimeStamp = 0;
+      acc.token = '';
+      acc.save().then(() => {
+        return res.json({ errcode: 0, errmsg: 'success' })
+      }).catch(err => {
+        console.log(err)
+        return res.json({ errcode: 1, errmsg: 'something wrong' })
+      })
+    } else {
+      return res.json({ errcode: 2, errmsg: 'incorrect timestamp' })
+    }
+  }).catch(err => {
+    console.log(err)
+    return res.json({ errcode: 1, errmsg: 'something wrong' })
+  })
+})
+
+app.post('/requestResetPasswordEmail', (req, res) => {
+  var email = req.body.email;
+  console.log(email);
+  var timestamp = new Date().getTime();
+  Account.findOne({ email: email, isActive: true }).then(acc => {
+    if (acc !== null) {
+      acc.resetTimeStamp = timestamp;
+      acc.save().then(acc => {
+        var htmlMessage = '<h1>Use the link below to reset your password</h1>'
+          + '<p>' + frontEndUrl + '/resetpassword/' + acc._id + '/' + timestamp + '</p>'
+        var mailOptions = {
+          from: 'a745874355@gmail.com',
+          to: acc.email,
+          subject: 'Reset password',
+          html: htmlMessage
+        };
+        sendEmail(mailOptions, (error, info) => {
+          if (error) res.json({ errcode: 4, errmsg: 'failed to send email' })
+          else res.json({ errcode: 0, errmsg: 'email sent' })
+        })
+      }).catch(err => {
+        return res.json({ errcode: 3, errmsg: 'error on setting timestamp' })
+      })
+    } else {
+      return res.json({ errcode: 2, errmsg: 'account not found' })
+    }
+  }).catch((err) => {
+    console.log(err)
+    return res.json({ errcode: 1, errmsg: 'account error' })
+  })
+})
+
+async function initRemindEmailTimers() {
+  console.log('Reload Reminds for reservations')
+  var timers = cache.get('emailConfirmationTimers')
+  if (timers === null) {
+    timers = cache.put('emailConfirmationTimers', new Set());
+  }
+  var reservations = await Reservation.find({ status: 2 }).populate('customer').populate("restaurant");
+  for (var popedRevs of reservations) {
+    var emailaddress = (await Account.findById(popedRevs.customer.account)).email;
+    if (!emailaddress || emailaddress === null) {
+      console.log('email address is null in restaurant reserve')
+      continue;
+    }
+    var htmlMessageConfirm = '<h1>Thans for using BookEat. Your reservation is coming soon</h1>' +
+      '<p>Restaurant name: ' + popedRevs.restaurant.resName + '</p>' +
+      '<p>Restaurant phone number: ' + popedRevs.restaurant.phoneNumber + '</p>' +
+      '<p>Date Time: ' + moment(new Date(popedRevs.dateTime)).format('YYYY-MM-DD HH:mm') + '</p>';
+    var mailOptionsConfirm = {
+      from: 'a745874355@gmail.com',
+      to: emailaddress,
+      subject: 'Your reservation comes soon',
+      html: htmlMessageConfirm
+    };
+    if (moment(new Date(popedRevs.dateTime)).diff(moment(new Date()), 'minutes') <= 120) {
+      console.log('reservation ' + popedRevs._id + ' Reminder Sent')
+      transporter.sendMail(mailOptionsConfirm, (error, info) => {
+        if (error) console.log(error)
+      })
+      if(moment(new Date(popedRevs.dateTime)).diff(moment(new Date()), 'minutes') <= 0){
+        popedRevs.status = 0;
+        popedRevs.save();
+      }
+    } else {
+      var timevalue = moment(new Date(popedRevs.dateTime)).diff(moment(new Date()), 'milliseconds') - 7200000;
+      var timers = cache.get('emailConfirmationTimers');
+      if (timers === null) {
+        timers = cache.put('emailConfirmationTimers', new Set());
+      }
+      var timerObject = {
+        reservationId: popedRevs._id, timer: setTimeout(() => {
+          console.log('Reminder Email sent')
+          transporter.sendMail(mailOptionsConfirm, (error, info) => {
+            if (error) console.log(error)
+            timers.delete(timerObject);
+          })
+        }, timevalue)
+      }
+      timers.add(timerObject);
+      console.log('reservation ' + popedRevs._id + ' Reminder schedule in(ms) ' + timevalue)
+    }
+  }
+}
+
+
 app.listen(port, () => {
+  initRemindEmailTimers();
   //t();
   connection.once("open", async () => {
     //init stream

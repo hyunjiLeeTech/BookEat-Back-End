@@ -5,6 +5,17 @@ const Reservation = require("../models/reservation.model");
 const moment = require('moment')
 const cache = require('memory-cache');
 const { json } = require("express");
+const Restaurant = require("../models/restaurnat.model");
+const nodemailer = require('nodemailer');
+const frontEndUrl = 'http://localhost:3000' //FIXME: testing, change to heroku url
+var transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'a745874355@gmail.com',
+    pass: 'Aa7758521'
+  }
+});
+
 let findAccountByEmailAsyc = async function (email) {
   return await Account.find({ email: email });
 };
@@ -158,10 +169,38 @@ router.route("/cancelreservation").post(async (req, res) => {
       return;
     }
     reservation.status = 3;
-    reservation.save().then((revs) => {
+    reservation.save().then(async (revs) => {
       updateInMemoryReservationsAysnc(revs._id, revs)
+      var timers = cache.get('emailConfirmationTimers');
+      timers.forEach(function(v, v2, set){
+        if(v.reservationId === revs._id){
+          clearTimeout(v.timer);
+          set.delete(v);
+          console.log('reminder email cancelled')
+        }
+      })
+      var rest = await Restaurant.findOne({_id: reservation.restaurant});
+      var cus = await Customer.findOne({ _id: reservation.customer }).populate('account');
+      var htmlMessage = '<h1>Your Reservation has been cancelled by restaurant.</h1>' +
+        '<h3>Here is your booking information:</h3>' +
+        '<p>Customer name: ' + cus.firstName + ' ' + cus.lastName + '</p>' +
+        '<p>Customer phone number: ' + cus.phoneNumber + '</p>' +
+        '<p>Restaurant name: ' + rest.resName + '</p>' +
+        '<p>Restaurant phone number: ' + rest.phoneNumber + '</p>' +
+        '<p>Date Time: ' + moment(new Date(reservation.dateTime)).format('YYYY-MM-DD HH:mm') + '</p>' +
+        '<p>If you have any questions or concerns, please directly contact restaurant</p>';
+      var mailOptions = {
+        from: 'a745874355@gmail.com',
+        to: cus.account.email,
+        subject: 'Booking Cancelled by Restaurant',
+        html: htmlMessage
+      };
+      transporter.sendMail(mailOptions, (error, info)=>{
+        if(error) console.log(error);
+      })
       res.json({ errcode: 0, errmsg: "success" })
     }).catch(err => {
+      console.log(err)
       res.json({ errcode: 1, errmsg: err })
     })
   } catch (err) {
