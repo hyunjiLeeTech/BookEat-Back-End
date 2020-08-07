@@ -172,8 +172,8 @@ app.post("/addMenuImage", upload.single('menuImage'), (req, res) => {
   res.json({ errcode: 0, menuImage: req.file.filename });
 });
 
-app.get("/getReviewsResSide", async (req, res) => {
-  console.log("Accessing /getReviewsResSide");
+app.get("/getReviewsWithoutSignUp", async (req, res) => {
+  console.log("Accessing /getReviewsWithoutSignUp");
   var restaurantId = req.query.resId;
 
   try {
