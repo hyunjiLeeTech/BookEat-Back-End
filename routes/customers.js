@@ -28,13 +28,13 @@ let findCustomerByAccount = async function (acc) {
   return await Customer.findOne({ account: acc })
 }
 
-async function updateInMemoryReservationsAysnc(id, reservation){
+async function updateInMemoryReservationsAysnc(id, reservation) {
   var reservations = cache.get('reservations')
-  if(reservations === null) return;
-  if(id === null) reservations.push(reservation);
+  if (reservations === null) return;
+  if (id === null) reservations.push(reservation);
   console.log("Updating reservations in memory cache of" + id)
-  for(var index in reservations){
-    if(reservations[index]._id.toString() === id.toString()){
+  for (var index in reservations) {
+    if (reservations[index]._id.toString() === id.toString()) {
       reservations[index] = reservation;
       return;
     }
@@ -138,7 +138,6 @@ let editCustomerAsync = async function (obj) {
 };
 
 router.route("/editcustomerprofile").post(async (req, res) => {
-  console.log("Accessing customers/editcustomerprofile");
   try {
     var obj = {
       accountId: req.user._id,
@@ -164,7 +163,7 @@ router.route("/editcustomerprofile").post(async (req, res) => {
 router.route("/cancelreservation").post(async (req, res) => {
   try {
     var reservation = await getReservationByIdWithCustomerAsync(req.body.reservationId);
-    if(reservation.customer.account.toString() !== req.user._id.toString()){
+    if (reservation.customer.account.toString() !== req.user._id.toString()) {
       res.status(401).send('access denied');
       return;
     }
@@ -172,14 +171,14 @@ router.route("/cancelreservation").post(async (req, res) => {
     reservation.save().then(async (revs) => {
       updateInMemoryReservationsAysnc(revs._id, revs)
       var timers = cache.get('emailConfirmationTimers');
-      timers.forEach(function(v, v2, set){
-        if(v.reservationId === revs._id){
+      timers.forEach(function (v, v2, set) {
+        if (v.reservationId === revs._id) {
           clearTimeout(v.timer);
           set.delete(v);
           console.log('reminder email cancelled')
         }
       })
-      var rest = await Restaurant.findOne({_id: reservation.restaurant});
+      var rest = await Restaurant.findOne({ _id: reservation.restaurant });
       var cus = await Customer.findOne({ _id: reservation.customer }).populate('account');
       var htmlMessage = '<h1>Your Reservation has been cancelled by restaurant.</h1>' +
         '<h3>Here is your booking information:</h3>' +
@@ -195,8 +194,8 @@ router.route("/cancelreservation").post(async (req, res) => {
         subject: 'Booking Cancelled by Restaurant',
         html: htmlMessage
       };
-      transporter.sendMail(mailOptions, (error, info)=>{
-        if(error) console.log(error);
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) console.log(error);
       })
       res.json({ errcode: 0, errmsg: "success" })
     }).catch(err => {
@@ -238,14 +237,11 @@ router.route("/").get((req, res) => {
 router.route("/getcustomerinfo").get((req, res) => {
   var _id = req.user._id;
   //query from db
-  console.log("/customers/getcustomerinfo:");
   Customer.findOne({ account: _id })
     .populate("account")
     .then((result) => {
-      //console.log(result);
       res.json(result);
     });
-  //console.log(req.user);
 });
 
 // post request (/customers/add)
@@ -273,19 +269,19 @@ router.route("/add").post((req, res) => {
     });
 });
 
-router.get('/delete', async (req,res) =>{
+router.get('/delete', async (req, res) => {
   console.log('deleting account')
   var u = req.user;
   u = await Account.findById(u._id)
-  var customer = await Customer.findOne({account: u._id})
-  var reservations = await Reservation.find({customer: customer._id, status: 2});
-  if(reservations.length > 0){
-    return res.json({errcode: 1, errmsg: 'Please finish all reservations before delete your account'})
-  }else{
+  var customer = await Customer.findOne({ account: u._id })
+  var reservations = await Reservation.find({ customer: customer._id, status: 2 });
+  if (reservations.length > 0) {
+    return res.json({ errcode: 1, errmsg: 'Please finish all reservations before delete your account' })
+  } else {
     u.isActive = false;
     u.token = '';
     await u.save();
-    return res.json({errcode: 0, errmsg: 'success'})
+    return res.json({ errcode: 0, errmsg: 'success' })
   }
 })
 
