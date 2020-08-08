@@ -10,8 +10,6 @@ router.route("/").get(async (req, res) => {
 })
 
 router.route("/getreviewscustomerside").get(async (req, res) => {
-    console.log("Accessing /review/getreviewscustomerside");
-    console.log(req.body);
     var userType = req.user.userTypeId;
 
     if (userType == 1) {
@@ -30,7 +28,6 @@ router.route("/getreviewscustomerside").get(async (req, res) => {
 })
 
 router.route("/getreviewsrestaurantside").get(async (req, res) => {
-    console.log("Accessing /review/getreviewsrestaurantside");
     var restaurantId = req.query[0];
 
     try {
@@ -40,7 +37,6 @@ router.route("/getreviewsrestaurantside").get(async (req, res) => {
         })
             .sort({ "updatedAt": -1 })
             .populate("customerId");
-        console.log(reviews);
         res.json({ errcode: 0, reviews: reviews });
 
     } catch (err) {
@@ -49,7 +45,6 @@ router.route("/getreviewsrestaurantside").get(async (req, res) => {
 })
 
 router.route("/getreviewsresownermanager").get(async (req, res) => {
-    console.log("Accessing /review/getreviewsresownermanager");
     var userType = req.user.userTypeId;
     var accountId = req.user._id;
 
@@ -74,8 +69,6 @@ router.route("/getreviewsresownermanager").get(async (req, res) => {
 })
 
 router.route("/addreview").post(async (req, res) => {
-    console.log("Accessing /review/addreview");
-
     var userType = req.user.userTypeId;
 
     if (userType == 1) { // customer
@@ -125,9 +118,6 @@ router.route("/addreview").post(async (req, res) => {
 })
 
 router.route("/editreview").post(async (req, res) => {
-    console.log("Accessing /review/editreview");
-    console.log(req.body);
-
     var comment = req.body.comment;
     var food = req.body.foodRate;
     var service = req.body.serviceRate;
@@ -143,14 +133,11 @@ router.route("/editreview").post(async (req, res) => {
         review.save();
         res.json({ errcode: 0, errmsg: 'success edit review' })
     }).catch(err => {
-        console.log(err)
         res.json({ errcode: 1, errmsg: err })
     })
 })
 
 router.route("/deletereview").post(async (req, res) => {
-    console.log("Accessing /review/deletereview");
-    console.log(req.body);
     var reviewId = req.body._id;
 
     Review.findById(reviewId).then((review) => {
