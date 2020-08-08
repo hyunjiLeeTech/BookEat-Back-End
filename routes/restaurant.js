@@ -14,7 +14,16 @@ const Customer = require("../models/customer.model");
 const Manager = require("../models/manager.model");
 const FoodOrder = require("../models/foodOrder.model");
 const Menu = require("../models/menu.model");
-
+const nodemailer = require('nodemailer');
+const Account = require("../models/account.model");
+const frontEndUrl = 'http://localhost:3000' //FIXME: testing, change to heroku url
+var transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'a745874355@gmail.com',
+    pass: 'Aa7758521'
+  }
+});
 let findCustomerByAccountAsync = async function (acc) {
   return await Customer.findOne({ account: acc })
 }
@@ -277,8 +286,35 @@ router.route("/cancelreservation").post(async (req, res) => {
   try {
     var reservation = await getReservationByIdAsync(req.body.reservationId);
     reservation.status = 4;
-    reservation.save().then((revs) => {
+    reservation.save().then(async (revs) => {
       updateInMemoryReservationsAysnc(revs._id, revs);
+      var timers = cache.get('emailConfirmationTimers');
+      timers.forEach(function(v, v2, set){
+        if(v.reservationId === revs._id){
+          clearTimeout(v.timer);
+          set.delete(v);
+          console.log('reminder email cancelled')
+        }
+      })
+      var rest = await Restaurant.findOne({ _id: reservation.restaurant });
+      var cus = await Customer.findOne({ _id: reservation.customer }).populate('account');
+      var htmlMessage = '<h1>Your Reservation has been cancelled by restaurant.</h1>' +
+        '<h3>Here is your booking information:</h3>' +
+        '<p>Customer name: ' + cus.firstName + ' ' + cus.lastName + '</p>' +
+        '<p>Customer phone number: ' + cus.phoneNumber + '</p>' +
+        '<p>Restaurant name: ' + rest.resName + '</p>' +
+        '<p>Restaurant phone number: ' + rest.phoneNumber + '</p>' +
+        '<p>Date Time: ' + moment(new Date(reservation.dateTime)).format('YYYY-MM-DD HH:mm') + '</p>' +
+        '<p>If you have any questions or concerns, please directly contact restaurant</p>';
+      var mailOptions = {
+        from: 'a745874355@gmail.com',
+        to: cus.account.email,
+        subject: 'Booking Cancelled by Restaurant',
+        html: htmlMessage
+      };
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) console.log(error);
+      })
       res.json({ errcode: 0, errmsg: "success" })
     }).catch(err => {
       res.json({ errcode: 1, errmsg: err })
@@ -330,10 +366,14 @@ router.route("/reserve").post(async (req, res) => {
     customerId: await findCustomerByAccountAsync(req.user._id),
     menuItems: req.body.menuItems
   }
-
+  
   if (obj.customerId === null) {
     res.json({ errcode: 4, errmsg: "Customer not found" });
     return;
+  }
+
+  if(moment(obj.dateTime).diff(new Date(), 'milliseconds') >= 2147483647){
+    return res.json({errcode: 5, errmsg: 'Cannot reserve in more that 24 days in advance'})
   }
 
   var eatingTime = 2; //TODO: get eating time from restaruant database
@@ -380,6 +420,59 @@ router.route("/reserve").post(async (req, res) => {
       cache.del(table._id);
       updateInMemoryReservationsAysnc(null, revs)
       var popedRevs = await revs.populate("customer").populate("restaurant").execPopulate();
+      var htmlMessage = '<h1>Thanks for booking at BookEat</h1>' +
+        '<h3>Here is your booking information:</h3>' +
+        '<p>Customer name: ' + popedRevs.customer.firstName + ' ' + popedRevs.customer.lastName + '</p>' +
+        '<p>Customer phone number: ' + popedRevs.customer.phoneNumber + '</p>' +
+        '<p>Restaurant name: ' + popedRevs.restaurant.resName + '</p>' +
+        '<p>Restaurant phone number: ' + popedRevs.restaurant.phoneNumber + '</p>' +
+        '<p>Date Time: ' + moment(new Date(popedRevs.dateTime)).format('YYYY-MM-DD HH:mm') + '</p>' +
+        '<p>We will send you a reminder before your reservation time. Thanks</p>';
+      var emailaddress = (await Account.findById(popedRevs.customer.account)).email;
+      if (!emailaddress || emailaddress === null) console.log('email address is null in restaurant reserve')
+      if (emailaddress !== null) {
+        var mailOptions = {
+          from: 'a745874355@gmail.com',
+          to: emailaddress,
+          subject: 'Booking Confirmation',
+          html: htmlMessage
+        };
+        transporter.sendMail(mailOptions, (error, info) => {
+          if (error) console.log(err);
+        })
+        var htmlMessageConfirm = '<h1>Thans for using BookEat. Your reservation is coming soon</h1>' +
+          '<p>Restaurant name: ' + popedRevs.restaurant.resName + '</p>' +
+          '<p>Restaurant phone number: ' + popedRevs.restaurant.phoneNumber + '</p>' +
+          '<p>Date Time: ' + moment(new Date(popedRevs.dateTime)).format('YYYY-MM-DD HH:mm') + '</p>';
+        var mailOptionsConfirm = {
+          from: 'a745874355@gmail.com',
+          to: emailaddress,
+          subject: 'Your reservation comes soon',
+          html: htmlMessageConfirm
+        };
+        if (moment(new Date(popedRevs.dateTime)).diff(moment(new Date()), 'minutes') <= 120) {
+          transporter.sendMail(mailOptionsConfirm, (error, info) => {
+            if (error) console.log(error)
+          })
+        } else {
+          var timevalue = moment(new Date(popedRevs.dateTime)).diff(moment(new Date()), 'milliseconds') - 7200000;
+          var timers = cache.get('emailConfirmationTimers');
+          if (timers === null) {
+            timers = cache.put('emailConfirmationTimers', new Set());
+          }
+          console.log('Reservation added, reminder remail will be send in(ms) ' + timevalue)
+          var timerObject = {
+            reservationId: popedRevs._id, timer: setTimeout(() => {
+              console.log('Reminder Email sent')
+              transporter.sendMail(mailOptionsConfirm, (error, info) => {
+                if (error) console.log(error)
+                timers.delete(timerObject);
+              })
+            }, timevalue)
+          }
+          timers.add(timerObject);
+        }
+      }
       res.json({ errcode: 0, reservation: popedRevs })
     }
     ).catch(err => {
