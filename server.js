@@ -990,17 +990,17 @@ function filterRestaurantsByMenusUsingKeyword(keyword, menus) {
 
 function isRestaurantAvailableAtDateTime(restaurant, dateTime) {
   var times = cache.get('storeTimes');
-  if (times === null){
+  if (times === null) {
     console.log('No Times in memory!!')
     return false;
   }
-    
+
   var weekDay = new Date(dateTime).getDay();
   var openId = '', closeId = '';
-  var getTimeString = function(id){
-    if(id === '') return null;
-    for(var t of times){
-      if(t._id.toString() === id.toString()){
+  var getTimeString = function (id) {
+    if (id === '') return null;
+    for (var t of times) {
+      if (t._id.toString() === id.toString()) {
         return t.storeTimeName;
       }
     }
@@ -1052,10 +1052,10 @@ function isRestaurantAvailableAtDateTime(restaurant, dateTime) {
   }
   var openTime = getTimeString(openId)
   var closeTime = getTimeString(closeId);
-  if(openTime === null || closeTime === null) return false;
-  openTime = new Date(moment(new Date(dateTime)).format('YYYY-MM-DD') + ' ' +openTime)
-  closeTime = new Date(moment(new Date(dateTime)).format('YYYY-MM-DD') + ' '+ closeTime)
-  if(new Date(dateTime) > openTime && new Date(dateTime) < closeTime) return true
+  if (openTime === null || closeTime === null) return false;
+  openTime = new Date(moment(new Date(dateTime)).format('YYYY-MM-DD') + ' ' + openTime)
+  closeTime = new Date(moment(new Date(dateTime)).format('YYYY-MM-DD') + ' ' + closeTime)
+  if (new Date(dateTime) > openTime && new Date(dateTime) < closeTime) return true
   else return false;
 }
 
@@ -1108,8 +1108,8 @@ app.post('/search', async (req, res) => {
     //console.log(menusfiltered);
 
     tr = new Set([...tr, ...menusfiltered]);
-    tr.forEach((v1,v2,set)=>{
-      if(!isRestaurantAvailableAtDateTime(v1, req.body.dateTime)) set.delete(v1)
+    tr.forEach((v1, v2, set) => {
+      if (!isRestaurantAvailableAtDateTime(v1, req.body.dateTime)) set.delete(v1)
     })
 
     //TODO: filter out restaurant with status:?
@@ -1181,6 +1181,7 @@ app.post('/resetPasswordWithTimestamp', async (req, res) => {
   })
 })
 
+
 app.post('/requestResetPasswordEmail', (req, res) => {
   var email = req.body.email;
   console.log(email);
@@ -1212,6 +1213,33 @@ app.post('/requestResetPasswordEmail', (req, res) => {
     return res.json({ errcode: 1, errmsg: 'account error' })
   })
 })
+
+async function getRandomRestaurant(num) {
+  if (!num) num = 5
+  var restaurants = await Restaurant.find();
+  var tr = new Set();
+  for (var i = 0; i < num; i++) {
+    tr.push(restaurants(Math.floor(Math.random() * restaurants.length)))
+  }
+  tr = Array.from(tr);
+  return tr;
+}
+
+app.get('/daily', async (req, res) => {
+  var restaurants = await getRandomRestaurant();
+  return res.json({errcode: 0, restaruants: restaurants})
+})
+
+app.get('/featured', async (req, res) => {
+  var restaurants = await getRandomRestaurant();
+  return res.json({errcode: 0, restaruants: restaurants})
+})
+
+app.get('/favorite', async (req, res) => {
+  var restaurants = await getRandomRestaurant();
+  return res.json({errcode: 0, restaruants: restaurants})
+})
+
 
 async function initRemindEmailTimers() {
   console.log('Reload Reminds for reservations')
