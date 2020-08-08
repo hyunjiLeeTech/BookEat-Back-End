@@ -1268,7 +1268,7 @@ async function initRemindEmailTimers() {
 
 
 app.listen(port, () => {
-  //initRemindEmailTimers();
+  initRemindEmailTimers();
   //t();
   connection.once("open", async () => {
     cache.put('storeTimes', await StoreTime.find())
