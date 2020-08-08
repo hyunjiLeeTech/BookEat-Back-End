@@ -19,6 +19,78 @@ var transporter = nodemailer.createTransport({
   }
 });
 
+function isRestaurantAvailableAtDateTime(restaurant, dateTime) {
+  var times = cache.get('storeTimes');
+  if (times === null){
+    console.log('No Times in memory!!')
+    return false;
+  }
+    
+  var weekDay = new Date(dateTime).getDay();
+  var openId = '', closeId = '';
+  var getTimeString = function(id){
+    if(id === '') return null;
+    for(var t of times){
+      if(t._id.toString() === id.toString()){
+        return t.storeTimeName;
+      }
+    }
+    return null;
+  }
+  switch (weekDay) {
+    case 1:
+      if (!restaurant.monIsClose) {
+        openId = restaurant.monOpenTimeId;
+        closeId = restaurant.monCloseTimeId;
+      }
+      break;
+    case 2:
+      if (!restaurant.tueIsClose) {
+        openId = restaurant.tueOpenTimeId;
+        closeId = restaurant.tueCloseTimeId;
+      }
+      break;
+    case 3:
+      if (!restaurant.wedIsClose) {
+        openId = restaurant.wedOpenTimeId;
+        closeId = restaurant.wedCloseTimeId;
+      }
+      break;
+    case 4:
+      if (!restaurant.thuIsClose) {
+        openId = restaurant.thuOpenTimeId;
+        closeId = restaurant.thuCloseTimeId;
+      }
+      break;
+    case 5:
+      if (!restaurant.friIsClose) {
+        openId = restaurant.friOpenTimeId;
+        closeId = restaurant.friCloseTimeId;
+      }
+      break;
+    case 6:
+      if (!restaurant.satIsClose) {
+        openId = restaurant.satOpenTimeId;
+        closeId = restaurant.satCloseTimeId;
+      }
+      break;
+    case 0:
+      if (!restaurant.sunIsClose) {
+        openId = restaurant.sunOpenTimeId;
+        closeId = restaurant.sunCloseTimeId;
+      }
+      break;
+  }
+  var openTime = getTimeString(openId)
+  var closeTime = getTimeString(closeId);
+  if(openTime === null || closeTime === null) return false;
+  openTime = new Date(moment(new Date(dateTime)).format('YYYY-MM-DD') + ' ' +openTime)
+  closeTime = new Date(moment(new Date(dateTime)).format('YYYY-MM-DD') + ' '+ closeTime)
+  if(new Date(dateTime) > openTime && new Date(dateTime) < closeTime) return true
+  else return false;
+}
+
+
 let findAccountByEmailAsyc = async function (email) {
   return await Account.find({ email: email });
 };
@@ -142,7 +214,8 @@ let editCustomerAsync = async function (obj) {
 
 router.post('/updatereservation', async (req, res) => {
   var reservationId = req.body.reservationId;
-  var reservation = await Reservation.findById(reservationId).populate('customer');
+  var reservation = await Reservation.findById(reservationId).populate('customer').populate('restaurant');
+  if(!isRestaurantAvailableAtDateTime(reservation.restaurant, req.body.dateTime)) return res.json({ errcode: 6, errmsg: "Restaurant is not open at the time you selected" })
   if (reservation.customer.account.toString() !== req.user._id.toString()) return res.status(401).send('permisson denied')
   if (new Date() > new Date(req.body.dateTime)) return res.json({ errcode: 5, errmsg: "reserve history date is not allowed" })
   if (reservation) {

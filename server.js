@@ -23,7 +23,7 @@ const moment = require('moment')
 const nodemailer = require('nodemailer')
 const frontEndUrl = 'http://localhost:3000' //FIXME: testing, change to heroku url
 
-
+var gfs;
 
 
 var transporter = nodemailer.createTransport({
@@ -986,43 +986,79 @@ function filterRestaurantsByMenusUsingKeyword(keyword, menus) {
   return tr;
 }
 
-async function loadStoreTimesIntoMemory() {
-  if (cache.get('storeTimes') === null)
-    cache.put('storeTimes', await StoreTime.find())
-}
 
-function isRestaurantOnAtDateTime(restaurant, dateTime) {
-  var weekDay = new Date(dateTime).getDate();
-  var openId, closeId;
+
+function isRestaurantAvailableAtDateTime(restaurant, dateTime) {
+  var times = cache.get('storeTimes');
+  if (times === null){
+    console.log('No Times in memory!!')
+    return false;
+  }
+    
+  var weekDay = new Date(dateTime).getDay();
+  var openId = '', closeId = '';
+  var getTimeString = function(id){
+    if(id === '') return null;
+    for(var t of times){
+      if(t._id.toString() === id.toString()){
+        return t.storeTimeName;
+      }
+    }
+    return null;
+  }
   switch (weekDay) {
     case 1:
-      openId = restaurant.monOpenId;
-      closeId = restaurant.monCloseId
+      if (!restaurant.monIsClose) {
+        openId = restaurant.monOpenTimeId;
+        closeId = restaurant.monCloseTimeId;
+      }
       break;
     case 2:
-
+      if (!restaurant.tueIsClose) {
+        openId = restaurant.tueOpenTimeId;
+        closeId = restaurant.tueCloseTimeId;
+      }
       break;
     case 3:
-
+      if (!restaurant.wedIsClose) {
+        openId = restaurant.wedOpenTimeId;
+        closeId = restaurant.wedCloseTimeId;
+      }
       break;
     case 4:
-
+      if (!restaurant.thuIsClose) {
+        openId = restaurant.thuOpenTimeId;
+        closeId = restaurant.thuCloseTimeId;
+      }
       break;
     case 5:
-
+      if (!restaurant.friIsClose) {
+        openId = restaurant.friOpenTimeId;
+        closeId = restaurant.friCloseTimeId;
+      }
       break;
     case 6:
-
+      if (!restaurant.satIsClose) {
+        openId = restaurant.satOpenTimeId;
+        closeId = restaurant.satCloseTimeId;
+      }
       break;
-    case 7:
-
-      break;
-    default:
-      openId = null;
-      closeId = null;
+    case 0:
+      if (!restaurant.sunIsClose) {
+        openId = restaurant.sunOpenTimeId;
+        closeId = restaurant.sunCloseTimeId;
+      }
       break;
   }
+  var openTime = getTimeString(openId)
+  var closeTime = getTimeString(closeId);
+  if(openTime === null || closeTime === null) return false;
+  openTime = new Date(moment(new Date(dateTime)).format('YYYY-MM-DD') + ' ' +openTime)
+  closeTime = new Date(moment(new Date(dateTime)).format('YYYY-MM-DD') + ' '+ closeTime)
+  if(new Date(dateTime) > openTime && new Date(dateTime) < closeTime) return true
+  else return false;
 }
+
 
 app.post('/search', async (req, res) => {
   if (new Date() > new Date(req.body.dateTime)) return res.json({ errcode: 0, restaruant: [] })
@@ -1072,7 +1108,9 @@ app.post('/search', async (req, res) => {
     //console.log(menusfiltered);
 
     tr = new Set([...tr, ...menusfiltered]);
-
+    tr.forEach((v1,v2,set)=>{
+      if(!isRestaurantAvailableAtDateTime(v1, req.body.dateTime)) set.delete(v1)
+    })
 
     //TODO: filter out restaurant with status:?
 
@@ -1230,9 +1268,10 @@ async function initRemindEmailTimers() {
 
 
 app.listen(port, () => {
-  initRemindEmailTimers();
+  //initRemindEmailTimers();
   //t();
   connection.once("open", async () => {
+    cache.put('storeTimes', await StoreTime.find())
     //init stream
     gfs = Grid(connection.db, mongoose.mongo);
     gfs.collection('uploads');
