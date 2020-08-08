@@ -113,6 +113,7 @@ const discountRouter = require("./routes/discount");
 const reviewRouter = require("./routes/review");
 const { update } = require("./models/customer.model");
 const Discount = require("./models/discount.model");
+const StoreTime = require("./models/storeTime.model");
 
 // app.use
 app.use(
@@ -969,7 +970,46 @@ function filterRestaurantsByMenusUsingKeyword(keyword, menus) {
   return tr;
 }
 
+async function loadStoreTimesIntoMemory() {
+  if (cache.get('storeTimes') === null)
+    cache.put('storeTimes', await StoreTime.find())
+}
+
+function isRestaurantOnAtDateTime(restaurant, dateTime) {
+  var weekDay = new Date(dateTime).getDate();
+  var openId, closeId;
+  switch (weekDay) {
+    case 1:
+      openId = restaurant.monOpenId;
+      closeId = restaurant.monCloseId
+      break;
+    case 2:
+
+      break;
+    case 3:
+
+      break;
+    case 4:
+
+      break;
+    case 5:
+
+      break;
+    case 6:
+
+      break;
+    case 7:
+
+      break;
+    default:
+      openId = null;
+      closeId = null;
+      break;
+  }
+}
+
 app.post('/search', async (req, res) => {
+  if (new Date() > new Date(req.body.dateTime)) return res.json({ errcode: 0, restaruant: [] })
   try {
     var keyword = req.body.keyword;
     if (!keyword || keyword.length < 1 || keyword === 'null' || keyword === 'undefined') keyword = '';
@@ -1147,7 +1187,7 @@ async function initRemindEmailTimers() {
       transporter.sendMail(mailOptionsConfirm, (error, info) => {
         if (error) console.log(error)
       })
-      if(moment(new Date(popedRevs.dateTime)).diff(moment(new Date()), 'minutes') <= 0){
+      if (moment(new Date(popedRevs.dateTime)).diff(moment(new Date()), 'minutes') <= 0) {
         popedRevs.status = 0;
         popedRevs.save();
       }

@@ -366,7 +366,7 @@ router.route("/reserve").post(async (req, res) => {
     customerId: await findCustomerByAccountAsync(req.user._id),
     menuItems: req.body.menuItems
   }
-  
+  if (new Date() > new Date(req.body.dateTime)) return res.json({ errcode: 5, errmsg: "reserve history date is not allowed" })
   if (obj.customerId === null) {
     res.json({ errcode: 4, errmsg: "Customer not found" });
     return;

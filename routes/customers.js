@@ -143,7 +143,8 @@ let editCustomerAsync = async function (obj) {
 router.post('/updatereservation', async (req, res) => {
   var reservationId = req.body.reservationId;
   var reservation = await Reservation.findById(reservationId).populate('customer');
-  if(reservation.customer.account.toString() !== req.user._id.toString()) return res.status(401).send('permisson denied')
+  if (reservation.customer.account.toString() !== req.user._id.toString()) return res.status(401).send('permisson denied')
+  if (new Date() > new Date(req.body.dateTime)) return res.json({ errcode: 5, errmsg: "reserve history date is not allowed" })
   if (reservation) {
     reservation.numOfPeople = req.body.numOfPeople;
     reservation.dateTime = req.body.dateTime;
@@ -162,7 +163,7 @@ router.post('/updatereservation', async (req, res) => {
       reservation.FoodOrder = fo;
       var revs = await reservation.save();
       var popedRevs = await revs.populate("customer").populate("restaurant").execPopulate();
-      
+
       updateInMemoryReservationsAysnc(revs._id, revs)
       var timers = cache.get('emailConfirmationTimers');
       timers.forEach(function (v, v2, set) {
@@ -172,7 +173,7 @@ router.post('/updatereservation', async (req, res) => {
           console.log('reminder email cancelled')
         }
       })
-      
+
       var popedRevs = await revs.populate("customer").populate("restaurant").execPopulate();
       var htmlMessage = '<h1>Reservation Update</h1>' +
         '<h3>Here is your updated booking information:</h3>' +
@@ -227,11 +228,11 @@ router.post('/updatereservation', async (req, res) => {
           timers.add(timerObject);
         }
       }
-      
-      
-      
-      
-      
+
+
+
+
+
       return res.json({ errcode: 0, reservation: popedRevs })
     } else {
       console.log('modify food order')
@@ -246,8 +247,8 @@ router.post('/updatereservation', async (req, res) => {
       }
       var revs = await reservation.save();
       var popedRevs = await revs.populate("customer").populate("restaurant").execPopulate();
-      
-      
+
+
       updateInMemoryReservationsAysnc(revs._id, revs)
       var timers = cache.get('emailConfirmationTimers');
       timers.forEach(function (v, v2, set) {
@@ -257,7 +258,7 @@ router.post('/updatereservation', async (req, res) => {
           console.log('reminder email cancelled')
         }
       })
-      
+
       var popedRevs = await revs.populate("customer").populate("restaurant").execPopulate();
       var htmlMessage = '<h1>Reservation Update</h1>' +
         '<h3>Here is your updated booking information:</h3>' +
@@ -312,16 +313,16 @@ router.post('/updatereservation', async (req, res) => {
           timers.add(timerObject);
         }
       }
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
+
+
+
+
+
+
+
+
+
+
       return res.json({ errcode: 0, reservation: popedRevs })
     }
   } else {
