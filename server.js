@@ -159,17 +159,12 @@ app.use(
 )
 
 app.post("/addPictures", upload.array('pictures[]', 10), (req, res) => {
-  console.log("Accessing /addPictures");
   pictures = req.files;
   res.json({ errcode: 0, pictures: pictures });
 })
 
 app.post("/addMenuImage", upload.single('menuImage'), (req, res) => {
-  console.log("Accessing /addMenuImage");
-  // console.log(req.body.menuName);
-  // console.log(req.file);
   menuImage = req.file;
-  // console.log(req.file.id);
   res.json({ errcode: 0, menuImage: req.file.filename });
 });
 
@@ -193,14 +188,11 @@ app.get("/getReviewsWithoutSignUp", async (req, res) => {
 })
 
 app.post("/editMenuImage", upload.single('menuImage'), (req, res) => {
-  console.log("Accessing /editMenuImage");
-  console.log(req.file);
   menuImage = req.file;
   res.json({ errcode: 0, menuImage: req.file.filename });
 })
 
 app.delete("/deleteImage/:id", (req, res) => {
-  console.log("Accessing /deleteimage/:id")
   gfs.remove({ filename: req.params.id, root: 'uploads' }, (err, gridStore) => {
     if (err) {
       return res.json({ errcode: 1, errmsg: "Image not found" });
@@ -211,7 +203,6 @@ app.delete("/deleteImage/:id", (req, res) => {
 })
 
 app.delete("/deleteImages", (req, res) => {
-  console.log("Accessing /deleteimages");
   var images = req.query.pictures;
   for (var i = 0; i < images.length; i++) {
     gfs.remove({ filename: images[i], root: 'uploads' }, (err, gridStore) => {
@@ -225,7 +216,6 @@ app.delete("/deleteImages", (req, res) => {
 })
 
 app.get("/getimage/:id", (req, res) => {
-  console.log("Accessing /getimage/:id");
   var imageId = req.params.id.trim();
   gfs.files.findOne({ filename: imageId }, (err, file) => {
     if (!file) {
@@ -242,11 +232,6 @@ app.get("/getimage/:id", (req, res) => {
       return res.json({ errcode: 1, file: 'Not an image file' });
     }
   })
-})
-
-app.get('/getimages', (req, res) => {
-  console.log("Accessing /getimages");
-  console.log(req.body);
 })
 
 app.get(
@@ -701,7 +686,6 @@ let addManagerAsync = async function (obj) {
 };
 
 app.post("/managersignup", (req, res) => {
-  console.log("Accessing /managersignup");
   const resOwnerAccountId = req.body.resOwnerAccountId;
 
   //account info
@@ -779,7 +763,6 @@ app.get("/restaurants/:id", async function (req, res) {
       .populate('sunCloseTimeId')
 
     var discount = await Discount.findOne({ restaurantId: rest._id });
-    console.log(req.params.id);
     res.json({ errcode: 0, restaurant: rest, discount: discount });
   } catch (err) {
     console.log(err);
@@ -1180,7 +1163,7 @@ async function initRemindEmailTimers() {
       transporter.sendMail(mailOptionsConfirm, (error, info) => {
         if (error) console.log(error)
       })
-      if(moment(new Date(popedRevs.dateTime)).diff(moment(new Date()), 'minutes') <= 0){
+      if (moment(new Date(popedRevs.dateTime)).diff(moment(new Date()), 'minutes') <= 0) {
         popedRevs.status = 0;
         popedRevs.save();
       }
