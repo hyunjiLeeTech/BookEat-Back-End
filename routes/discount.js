@@ -4,7 +4,6 @@ let RestaurantOwner = require("../models/restaurantOwner.model");
 let Restaurant = require("../models/restaurnat.model");
 
 router.route("/getdiscounts").get(async (req, res) => {
-    console.log("Accessing discount/getdiscounts");
     try {
         var restaurant = await findRestaurantByIdAsync(req.user._id);
 
@@ -19,8 +18,6 @@ router.route("/getdiscounts").get(async (req, res) => {
 })
 
 router.route("/adddiscount").post(async (req, res) => {
-    console.log("Accessing discount/adddiscount");
-
     var obj = {
         accountId: req.user._id,
         percent: req.body.percent,
@@ -35,7 +32,6 @@ router.route("/adddiscount").post(async (req, res) => {
 })
 
 router.route("/editdiscount").post(async (req, res) => {
-    console.log("Accessing discount/editdiscounts");
     var percent = req.body.percent;
     var description = req.body.promdescription;
 
@@ -45,19 +41,16 @@ router.route("/editdiscount").post(async (req, res) => {
         discount.save();
         res.json({ errcode: 0, errmsg: 'success edit discount' })
     }).catch(err => {
-        console.log(err)
         res.json({ errcode: 1, errmsg: 'failed to save' })
     })
 })
 
 router.route("/deletediscount").post(async (req, res) => {
-    console.log("Accessing discount/deletediscounts");
     Discount.findById(req.body._id).then((discount) => {
         discount.isActive = false;
         discount.save();
         res.json({ errcode: 0, errmsg: 'success delete discount' })
     }).catch(err => {
-        console.log(err)
         res.json({ errcode: 1, errmsg: err })
     })
 })
