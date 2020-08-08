@@ -331,7 +331,6 @@ router.post('/updatereservation', async (req, res) => {
 })
 
 router.route("/editcustomerprofile").post(async (req, res) => {
-  console.log("Accessing customers/editcustomerprofile");
   try {
     var obj = {
       accountId: req.user._id,
@@ -444,14 +443,11 @@ router.route("/").get((req, res) => {
 router.route("/getcustomerinfo").get((req, res) => {
   var _id = req.user._id;
   //query from db
-  console.log("/customers/getcustomerinfo:");
   Customer.findOne({ account: _id })
     .populate("account")
     .then((result) => {
-      //console.log(result);
       res.json(result);
     });
-  //console.log(req.user);
 });
 
 // post request (/customers/add)

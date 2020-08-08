@@ -289,8 +289,8 @@ router.route("/cancelreservation").post(async (req, res) => {
     reservation.save().then(async (revs) => {
       updateInMemoryReservationsAysnc(revs._id, revs);
       var timers = cache.get('emailConfirmationTimers');
-      timers.forEach(function(v, v2, set){
-        if(v.reservationId === revs._id){
+      timers.forEach(function (v, v2, set) {
+        if (v.reservationId === revs._id) {
           clearTimeout(v.timer);
           set.delete(v);
           console.log('reminder email cancelled')
@@ -372,8 +372,8 @@ router.route("/reserve").post(async (req, res) => {
     return;
   }
 
-  if(moment(obj.dateTime).diff(new Date(), 'milliseconds') >= 2147483647){
-    return res.json({errcode: 5, errmsg: 'Cannot reserve in more that 24 days in advance'})
+  if (moment(obj.dateTime).diff(new Date(), 'milliseconds') >= 2147483647) {
+    return res.json({ errcode: 5, errmsg: 'Cannot reserve in more that 24 days in advance' })
   }
 
   var eatingTime = 2; //TODO: get eating time from restaruant database
@@ -600,6 +600,15 @@ router.route("/editresprofile").post((req, res) => {
     description: req.body.description,
     eatingTime: req.body.eatingTime,
 
+    //open or close
+    monIsClose: req.body.monIsClose,
+    tueIsClose: req.body.tueIsClose,
+    wedIsClose: req.body.wedIsClose,
+    thuIsClose: req.body.thuIsClose,
+    friIsClose: req.body.friIsClose,
+    satIsClose: req.body.satIsClose,
+    sunIsClose: req.body.sunIsClose,
+
     //open and close times
     monOpenTime: req.body.monOpenTime,
     tueOpenTime: req.body.tueOpenTime,
@@ -664,6 +673,15 @@ let editRestaurantProfile = async (obj) => {
     sunCloseId;
 
   let pictures = obj.pictures;
+
+  // open or close
+  let monIsClose = obj.monIsClose,
+    tueIsClose = obj.tueIsClose,
+    wedIsClose = obj.wedIsClose,
+    thuIsClose = obj.thuIsClose,
+    friIsClose = obj.friIsClose,
+    satIsClose = obj.satIsClose,
+    sunIsClose = obj.sunIsClose;
 
   //regular expression for validation
   const regExpPhone = RegExp(
@@ -912,6 +930,15 @@ let editRestaurantProfile = async (obj) => {
     for (var i = 0; i < pictures.length; i++) {
       restaurant.pictures.push(pictures[i]);
     }
+
+    // open or close time
+    restaurant.monIsClose = monIsClose;
+    restaurant.tueIsClose = tueIsClose;
+    restaurant.wedIsClose = wedIsClose;
+    restaurant.thuIsClose = thuIsClose;
+    restaurant.friIsClose = friIsClose;
+    restaurant.satIsClose = satIsClose;
+    restaurant.sunIsClose = sunIsClose;
 
     restaurant.save();
   });

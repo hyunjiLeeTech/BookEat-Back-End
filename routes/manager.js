@@ -4,7 +4,6 @@ let Restaurant = require("../models/restaurnat.model");
 let Manager = require("../models/manager.model");
 
 router.route("/getmanagerinfo").get((req, res) => {
-  console.log("Accessing /manager/getmanagerinfo");
   var _id = req.user._id;
 
   Manager.findOne({ accountId: _id })
@@ -15,7 +14,6 @@ router.route("/getmanagerinfo").get((req, res) => {
 });
 
 router.route("/editmanagerprofile").post((req, res) => {
-  console.log("Accessing /manager/editmanagerprofile");
   var _id = req.user._id;
 
   var obj = {
@@ -75,15 +73,12 @@ let editManagerProfile = async (obj) => {
 };
 
 router.route("/").get((req, res) => {
-  console.log("Accessing /manager");
   Manager.find()
     .then((manager) => res.json(manager))
     .catch((err) => res.status(400).json("Error: " + err));
 });
 
 router.route("/add").post((req, res) => {
-  console.log("Accessing /manager/add");
-
   //account info
   const email = req.body.email;
   const password = req.body.password;

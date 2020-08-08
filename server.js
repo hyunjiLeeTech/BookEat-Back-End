@@ -42,7 +42,7 @@ let RestaurantOwner = require("./models/restaurantOwner.model");
 let Restaurant = require("./models/restaurnat.model");
 let Address = require("./models/address.model");
 let Manager = require("./models/manager.model");
-
+let Review = require("./models/review.model");
 
 
 
@@ -160,30 +160,41 @@ app.use(
 )
 
 app.post("/addPictures", upload.array('pictures[]', 10), (req, res) => {
-  console.log("Accessing /addPictures");
   pictures = req.files;
   res.json({ errcode: 0, pictures: pictures });
 })
 
 app.post("/addMenuImage", upload.single('menuImage'), (req, res) => {
-  console.log("Accessing /addMenuImage");
-  // console.log(req.body.menuName);
-  // console.log(req.file);
   menuImage = req.file;
-  // console.log(req.file.id);
   res.json({ errcode: 0, menuImage: req.file.filename });
 });
 
+app.get("/getReviewsWithoutSignUp", async (req, res) => {
+  console.log("Accessing /getReviewsWithoutSignUp");
+  var restaurantId = req.query.resId;
+
+  try {
+    var reviews = await Review.find({
+      restaurantId: restaurantId,
+      isActive: true
+    })
+      .sort({ "updatedAt": -1 })
+      .populate("customerId");
+    console.log(reviews);
+    res.json({ errcode: 0, reviews: reviews });
+
+  } catch (err) {
+    res.json({ errcode: 1, errmsg: "internal error" });
+  }
+})
+
 app.post("/editMenuImage", upload.single('menuImage'), (req, res) => {
-  console.log("Accessing /editMenuImage");
-  console.log(req.file);
   menuImage = req.file;
   res.json({ errcode: 0, menuImage: req.file.filename });
 })
 
 app.delete("/deleteImage/:id", (req, res) => {
-  console.log("Accessing /deleteimage/:id")
-  gfs.remove({ _id: req.params.id, root: 'uploads' }, (err, gridStore) => {
+  gfs.remove({ filename: req.params.id, root: 'uploads' }, (err, gridStore) => {
     if (err) {
       return res.json({ errcode: 1, errmsg: "Image not found" });
     } else {
@@ -192,8 +203,20 @@ app.delete("/deleteImage/:id", (req, res) => {
   })
 })
 
+app.delete("/deleteImages", (req, res) => {
+  var images = req.query.pictures;
+  for (var i = 0; i < images.length; i++) {
+    gfs.remove({ filename: images[i], root: 'uploads' }, (err, gridStore) => {
+      if (err) {
+        return res.json({ errcode: 1, errmsg: "Image not found" });
+      }
+    })
+  }
+
+  res.json({ errcode: 0, errmsg: "Images delete success" });
+})
+
 app.get("/getimage/:id", (req, res) => {
-  console.log("Accessing /getimage/:id");
   var imageId = req.params.id.trim();
   gfs.files.findOne({ filename: imageId }, (err, file) => {
     if (!file) {
@@ -210,11 +233,6 @@ app.get("/getimage/:id", (req, res) => {
       return res.json({ errcode: 1, file: 'Not an image file' });
     }
   })
-})
-
-app.get('/getimages', (req, res) => {
-  console.log("Accessing /getimages");
-  console.log(req.body);
 })
 
 app.get(
@@ -669,7 +687,6 @@ let addManagerAsync = async function (obj) {
 };
 
 app.post("/managersignup", (req, res) => {
-  console.log("Accessing /managersignup");
   const resOwnerAccountId = req.body.resOwnerAccountId;
 
   //account info
@@ -747,7 +764,6 @@ app.get("/restaurants/:id", async function (req, res) {
       .populate('sunCloseTimeId')
 
     var discount = await Discount.findOne({ restaurantId: rest._id });
-    console.log(req.params.id);
     res.json({ errcode: 0, restaurant: rest, discount: discount });
   } catch (err) {
     console.log(err);

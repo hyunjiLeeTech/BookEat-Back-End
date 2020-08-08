@@ -12,6 +12,36 @@ const restaurantSchema = new Schema(
     status: { type: Number, required: true, default: 3 }, // 2: after sign up. not complete the profile, 4 deavtived
     eatingTime: { type: Number, required: false },
 
+    // open or close
+    monIsClose: {
+      type: Boolean,
+      default: true
+    },
+    tueIsClose: {
+      type: Boolean,
+      default: true
+    },
+    wedIsClose: {
+      type: Boolean,
+      default: true
+    },
+    thuIsClose: {
+      type: Boolean,
+      default: true
+    },
+    friIsClose: {
+      type: Boolean,
+      default: true
+    },
+    satIsClose: {
+      type: Boolean,
+      default: true
+    },
+    sunIsClose: {
+      type: Boolean,
+      default: true
+    },
+
     // open and close times
     monOpenTimeId: {
       type: Schema.Types.ObjectId,

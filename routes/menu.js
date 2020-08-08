@@ -5,11 +5,8 @@ let Restaurant = require("../models/restaurnat.model");
 let Manager = require("../models/manager.model");
 
 router.route("/getmenus").get(async (req, res) => {
-    console.log("Accessing /menu/getmenus");
     var actId = req.user._id;
     var userType = req.user.userTypeId;
-
-    console.log("user type: " + userType);
 
     try {
         if (userType == 2) {
@@ -39,7 +36,6 @@ router.route("/getmenus").get(async (req, res) => {
 })
 
 router.route("/addmenu").post((req, res) => {
-    console.log("Accessing /menu/addmenu");
     var accountId = req.user._id;
     var userType = req.user.userTypeId;
 
@@ -61,8 +57,6 @@ router.route("/addmenu").post((req, res) => {
         menuImageId
     }
 
-    console.log(obj);
-
     addMenuAsync(obj).then(() => {
         res.json({ errcode: 0, errmsg: "success add menu" })
     }).catch(err => {
@@ -71,9 +65,6 @@ router.route("/addmenu").post((req, res) => {
 })
 
 router.route("/editmenu").post((req, res) => {
-    console.log("Accessing /menu/editmenu");
-    console.log(req.body);
-
     Menu.findById(req.body._id).then((menu) => {
         menu.foodType = req.body.menuType;
         menu.menuName = req.body.menuName;
@@ -92,15 +83,11 @@ router.route("/editmenu").post((req, res) => {
 })
 
 router.route("/deletemenu").post((req, res) => {
-    console.log("Accessing /menu/deletemenu");
-    console.log(req.body);
-
     Menu.findById(req.body._id).then((menu) => {
         menu.isActive = false;
         menu.save();
         res.json({ errcode: 0, errmsg: 'success delete menu' })
     }).catch(err => {
-        console.log(err)
         res.json({ errcode: 1, errmsg: 'failed to save' })
     })
 
