@@ -7,6 +7,9 @@ const cache = require('memory-cache');
 const { json } = require("express");
 const Restaurant = require("../models/restaurnat.model");
 const nodemailer = require('nodemailer');
+const Table = require("../models/table.model");
+const FoodOrder = require("../models/foodOrder.model");
+const Menu = require("../models/menu.model");
 const frontEndUrl = 'http://localhost:3000' //FIXME: testing, change to heroku url
 var transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -28,13 +31,13 @@ let findCustomerByAccount = async function (acc) {
   return await Customer.findOne({ account: acc })
 }
 
-async function updateInMemoryReservationsAysnc(id, reservation){
+async function updateInMemoryReservationsAysnc(id, reservation) {
   var reservations = cache.get('reservations')
-  if(reservations === null) return;
-  if(id === null) reservations.push(reservation);
+  if (reservations === null) return;
+  if (id === null) reservations.push(reservation);
   console.log("Updating reservations in memory cache of" + id)
-  for(var index in reservations){
-    if(reservations[index]._id.toString() === id.toString()){
+  for (var index in reservations) {
+    if (reservations[index]._id.toString() === id.toString()) {
       reservations[index] = reservation;
       return;
     }
@@ -137,6 +140,195 @@ let editCustomerAsync = async function (obj) {
   });
 };
 
+router.post('/updatereservation', async (req, res) => {
+  var reservationId = req.body.reservationId;
+  var reservation = await Reservation.findById(reservationId).populate('customer');
+  if(reservation.customer.account.toString() !== req.user._id.toString()) return res.status(401).send('permisson denied')
+  if (reservation) {
+    reservation.numOfPeople = req.body.numOfPeople;
+    reservation.dateTime = req.body.dateTime;
+    reservation.comments = req.body.comments;
+    var table = await Table.findById(req.body.tableId);
+    if (table === null) return res.json({ errcode: 2, errmsg: 'table not found' })
+    reservation.table = table;
+    if (!reservation.FoodOrder) {
+      var menuItems = await Menu.find({ _id: { $in: req.body.menuItems } });
+      var fo = null;
+      if (menuItems.length > 0) {
+        fo = await new FoodOrder({
+          menuItems: menuItems,
+        }).save()
+      }
+      reservation.FoodOrder = fo;
+      var revs = await reservation.save();
+      var popedRevs = await revs.populate("customer").populate("restaurant").execPopulate();
+      
+      updateInMemoryReservationsAysnc(revs._id, revs)
+      var timers = cache.get('emailConfirmationTimers');
+      timers.forEach(function (v, v2, set) {
+        if (v.reservationId === revs._id) {
+          clearTimeout(v.timer);
+          set.delete(v);
+          console.log('reminder email cancelled')
+        }
+      })
+      
+      var popedRevs = await revs.populate("customer").populate("restaurant").execPopulate();
+      var htmlMessage = '<h1>Reservation Update</h1>' +
+        '<h3>Here is your updated booking information:</h3>' +
+        '<p>Customer name: ' + popedRevs.customer.firstName + ' ' + popedRevs.customer.lastName + '</p>' +
+        '<p>Customer phone number: ' + popedRevs.customer.phoneNumber + '</p>' +
+        '<p>Restaurant name: ' + popedRevs.restaurant.resName + '</p>' +
+        '<p>Restaurant phone number: ' + popedRevs.restaurant.phoneNumber + '</p>' +
+        '<p>Date Time: ' + moment(new Date(popedRevs.dateTime)).format('YYYY-MM-DD HH:mm') + '</p>' +
+        '<p>We will send you a reminder before your reservation time. Thanks</p>';
+      var emailaddress = (await Account.findById(popedRevs.customer.account)).email;
+      if (!emailaddress || emailaddress === null) console.log('email address is null in restaurant reserve')
+      if (emailaddress !== null) {
+        var mailOptions = {
+          from: 'a745874355@gmail.com',
+          to: emailaddress,
+          subject: 'Booking Update',
+          html: htmlMessage
+        };
+        transporter.sendMail(mailOptions, (error, info) => {
+          if (error) console.log(err);
+        })
+        var htmlMessageConfirm = '<h1>Thans for using BookEat. Your reservation is coming soon</h1>' +
+          '<p>Restaurant name: ' + popedRevs.restaurant.resName + '</p>' +
+          '<p>Restaurant phone number: ' + popedRevs.restaurant.phoneNumber + '</p>' +
+          '<p>Date Time: ' + moment(new Date(popedRevs.dateTime)).format('YYYY-MM-DD HH:mm') + '</p>';
+        var mailOptionsConfirm = {
+          from: 'a745874355@gmail.com',
+          to: emailaddress,
+          subject: 'Your reservation comes soon',
+          html: htmlMessageConfirm
+        };
+        if (moment(new Date(popedRevs.dateTime)).diff(moment(new Date()), 'minutes') <= 120) {
+          transporter.sendMail(mailOptionsConfirm, (error, info) => {
+            if (error) console.log(error)
+          })
+        } else {
+          var timevalue = moment(new Date(popedRevs.dateTime)).diff(moment(new Date()), 'milliseconds') - 7200000;
+          var timers = cache.get('emailConfirmationTimers');
+          if (timers === null) {
+            timers = cache.put('emailConfirmationTimers', new Set());
+          }
+          console.log('Reservation added, reminder remail will be send in(ms) ' + timevalue)
+          var timerObject = {
+            reservationId: popedRevs._id, timer: setTimeout(() => {
+              console.log('Reminder Email sent')
+              transporter.sendMail(mailOptionsConfirm, (error, info) => {
+                if (error) console.log(error)
+                timers.delete(timerObject);
+              })
+            }, timevalue)
+          }
+          timers.add(timerObject);
+        }
+      }
+      
+      
+      
+      
+      
+      return res.json({ errcode: 0, reservation: popedRevs })
+    } else {
+      console.log('modify food order')
+      console.log(req.body.menuItems)
+      var fo = await FoodOrder.findById(reservation.FoodOrder)
+      var menuItems = await Menu.find({ _id: { $in: req.body.menuItems } });
+      if (menuItems.length > 0) {
+        fo.menuItems = menuItems;
+        await fo.save();
+      } else {
+        reservation.FoodOrder = null;
+      }
+      var revs = await reservation.save();
+      var popedRevs = await revs.populate("customer").populate("restaurant").execPopulate();
+      
+      
+      updateInMemoryReservationsAysnc(revs._id, revs)
+      var timers = cache.get('emailConfirmationTimers');
+      timers.forEach(function (v, v2, set) {
+        if (v.reservationId === revs._id) {
+          clearTimeout(v.timer);
+          set.delete(v);
+          console.log('reminder email cancelled')
+        }
+      })
+      
+      var popedRevs = await revs.populate("customer").populate("restaurant").execPopulate();
+      var htmlMessage = '<h1>Reservation Update</h1>' +
+        '<h3>Here is your updated booking information:</h3>' +
+        '<p>Customer name: ' + popedRevs.customer.firstName + ' ' + popedRevs.customer.lastName + '</p>' +
+        '<p>Customer phone number: ' + popedRevs.customer.phoneNumber + '</p>' +
+        '<p>Restaurant name: ' + popedRevs.restaurant.resName + '</p>' +
+        '<p>Restaurant phone number: ' + popedRevs.restaurant.phoneNumber + '</p>' +
+        '<p>Date Time: ' + moment(new Date(popedRevs.dateTime)).format('YYYY-MM-DD HH:mm') + '</p>' +
+        '<p>We will send you a reminder before your reservation time. Thanks</p>';
+      var emailaddress = (await Account.findById(popedRevs.customer.account)).email;
+      if (!emailaddress || emailaddress === null) console.log('email address is null in restaurant reserve')
+      if (emailaddress !== null) {
+        var mailOptions = {
+          from: 'a745874355@gmail.com',
+          to: emailaddress,
+          subject: 'Booking Update',
+          html: htmlMessage
+        };
+        transporter.sendMail(mailOptions, (error, info) => {
+          if (error) console.log(err);
+        })
+        var htmlMessageConfirm = '<h1>Thans for using BookEat. Your reservation is coming soon</h1>' +
+          '<p>Restaurant name: ' + popedRevs.restaurant.resName + '</p>' +
+          '<p>Restaurant phone number: ' + popedRevs.restaurant.phoneNumber + '</p>' +
+          '<p>Date Time: ' + moment(new Date(popedRevs.dateTime)).format('YYYY-MM-DD HH:mm') + '</p>';
+        var mailOptionsConfirm = {
+          from: 'a745874355@gmail.com',
+          to: emailaddress,
+          subject: 'Your reservation comes soon',
+          html: htmlMessageConfirm
+        };
+        if (moment(new Date(popedRevs.dateTime)).diff(moment(new Date()), 'minutes') <= 120) {
+          transporter.sendMail(mailOptionsConfirm, (error, info) => {
+            if (error) console.log(error)
+          })
+        } else {
+          var timevalue = moment(new Date(popedRevs.dateTime)).diff(moment(new Date()), 'milliseconds') - 7200000;
+          var timers = cache.get('emailConfirmationTimers');
+          if (timers === null) {
+            timers = cache.put('emailConfirmationTimers', new Set());
+          }
+          console.log('Reservation added, reminder remail will be send in(ms) ' + timevalue)
+          var timerObject = {
+            reservationId: popedRevs._id, timer: setTimeout(() => {
+              console.log('Reminder Email sent')
+              transporter.sendMail(mailOptionsConfirm, (error, info) => {
+                if (error) console.log(error)
+                timers.delete(timerObject);
+              })
+            }, timevalue)
+          }
+          timers.add(timerObject);
+        }
+      }
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      return res.json({ errcode: 0, reservation: popedRevs })
+    }
+  } else {
+    return res.json({ errcode: 1, errmsg: 'reservation not found' })
+  }
+})
+
 router.route("/editcustomerprofile").post(async (req, res) => {
   console.log("Accessing customers/editcustomerprofile");
   try {
@@ -160,11 +352,24 @@ router.route("/editcustomerprofile").post(async (req, res) => {
   }
 });
 
+router.get('/gerreservationbyid/:id', async (req, res) => {
+  var id = req.params.id;
+  try {
+    var resv = await Reservation.findById(id);
+    if (resv) return res.json({ errcode: 0, reservation: resv })
+    else return res.json({ errcode: 1, errmsg: 'reservation not found' })
+  } catch (err) {
+    console.log(err)
+    res.status(500).send('internal error')
+  }
+
+})
+
 //TODO: testing
 router.route("/cancelreservation").post(async (req, res) => {
   try {
     var reservation = await getReservationByIdWithCustomerAsync(req.body.reservationId);
-    if(reservation.customer.account.toString() !== req.user._id.toString()){
+    if (reservation.customer.account.toString() !== req.user._id.toString()) {
       res.status(401).send('access denied');
       return;
     }
@@ -172,14 +377,14 @@ router.route("/cancelreservation").post(async (req, res) => {
     reservation.save().then(async (revs) => {
       updateInMemoryReservationsAysnc(revs._id, revs)
       var timers = cache.get('emailConfirmationTimers');
-      timers.forEach(function(v, v2, set){
-        if(v.reservationId === revs._id){
+      timers.forEach(function (v, v2, set) {
+        if (v.reservationId === revs._id) {
           clearTimeout(v.timer);
           set.delete(v);
           console.log('reminder email cancelled')
         }
       })
-      var rest = await Restaurant.findOne({_id: reservation.restaurant});
+      var rest = await Restaurant.findOne({ _id: reservation.restaurant });
       var cus = await Customer.findOne({ _id: reservation.customer }).populate('account');
       var htmlMessage = '<h1>Your Reservation has been cancelled by restaurant.</h1>' +
         '<h3>Here is your booking information:</h3>' +
@@ -195,8 +400,8 @@ router.route("/cancelreservation").post(async (req, res) => {
         subject: 'Booking Cancelled by Restaurant',
         html: htmlMessage
       };
-      transporter.sendMail(mailOptions, (error, info)=>{
-        if(error) console.log(error);
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) console.log(error);
       })
       res.json({ errcode: 0, errmsg: "success" })
     }).catch(err => {
@@ -273,19 +478,19 @@ router.route("/add").post((req, res) => {
     });
 });
 
-router.get('/delete', async (req,res) =>{
+router.get('/delete', async (req, res) => {
   console.log('deleting account')
   var u = req.user;
   u = await Account.findById(u._id)
-  var customer = await Customer.findOne({account: u._id})
-  var reservations = await Reservation.find({customer: customer._id, status: 2});
-  if(reservations.length > 0){
-    return res.json({errcode: 1, errmsg: 'Please finish all reservations before delete your account'})
-  }else{
+  var customer = await Customer.findOne({ account: u._id })
+  var reservations = await Reservation.find({ customer: customer._id, status: 2 });
+  if (reservations.length > 0) {
+    return res.json({ errcode: 1, errmsg: 'Please finish all reservations before delete your account' })
+  } else {
     u.isActive = false;
     u.token = '';
     await u.save();
-    return res.json({errcode: 0, errmsg: 'success'})
+    return res.json({ errcode: 0, errmsg: 'success' })
   }
 })
 

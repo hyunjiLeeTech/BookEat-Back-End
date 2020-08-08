@@ -397,7 +397,7 @@ router.route("/reserve").post(async (req, res) => {
     console.log("Saving: " + table._id);
     cache.put(table._id, "true", 30000);
     var fo = null;
-    if (obj.menuItems !== null) {
+    if (obj.menuItems !== null && obj.menuItems.length > 0) {
       var menuItems = await Menu.find({ _id: { $in: obj.menuItems } });
       fo = await new FoodOrder({
         menuItems: menuItems,
