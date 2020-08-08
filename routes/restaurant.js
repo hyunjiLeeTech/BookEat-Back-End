@@ -289,8 +289,8 @@ router.route("/cancelreservation").post(async (req, res) => {
     reservation.save().then(async (revs) => {
       updateInMemoryReservationsAysnc(revs._id, revs);
       var timers = cache.get('emailConfirmationTimers');
-      timers.forEach(function(v, v2, set){
-        if(v.reservationId === revs._id){
+      timers.forEach(function (v, v2, set) {
+        if (v.reservationId === revs._id) {
           clearTimeout(v.timer);
           set.delete(v);
           console.log('reminder email cancelled')
@@ -366,14 +366,14 @@ router.route("/reserve").post(async (req, res) => {
     customerId: await findCustomerByAccountAsync(req.user._id),
     menuItems: req.body.menuItems
   }
-  
+
   if (obj.customerId === null) {
     res.json({ errcode: 4, errmsg: "Customer not found" });
     return;
   }
 
-  if(moment(obj.dateTime).diff(new Date(), 'milliseconds') >= 2147483647){
-    return res.json({errcode: 5, errmsg: 'Cannot reserve in more that 24 days in advance'})
+  if (moment(obj.dateTime).diff(new Date(), 'milliseconds') >= 2147483647) {
+    return res.json({ errcode: 5, errmsg: 'Cannot reserve in more that 24 days in advance' })
   }
 
   var eatingTime = 2; //TODO: get eating time from restaruant database
@@ -603,7 +603,7 @@ router.route("/editresprofile").post((req, res) => {
     //open or close
     monIsClose: req.body.monIsClose,
     tueIsClose: req.body.tueIsClose,
-    wedIsClose: req.body.wedIsCose,
+    wedIsClose: req.body.wedIsClose,
     thuIsClose: req.body.thuIsClose,
     friIsClose: req.body.friIsClose,
     satIsClose: req.body.satIsClose,
@@ -677,7 +677,7 @@ let editRestaurantProfile = async (obj) => {
   // open or close
   let monIsClose = obj.monIsClose,
     tueIsClose = obj.tueIsClose,
-    wedIsClose = obj.webIsClose,
+    wedIsClose = obj.wedIsClose,
     thuIsClose = obj.thuIsClose,
     friIsClose = obj.friIsClose,
     satIsClose = obj.satIsClose,
