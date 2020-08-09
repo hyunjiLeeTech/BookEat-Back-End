@@ -879,7 +879,6 @@ let editRestaurantProfile = async (obj) => {
     restaurant.resName = obj.resName;
     restaurant.phoneNumber = obj.phoneNumber;
     restaurant.businessNum = obj.businessNum;
-    restaurant.status = status;
     restaurant.eatingTime = obj.eatingTime;
 
     restaurant.restaurantDescription =
@@ -931,6 +930,10 @@ let editRestaurantProfile = async (obj) => {
       restaurant.pictures.push(pictures[i]);
     }
 
+    if (restaurant.pictures.length == 0) {
+      status = 2
+    }
+
     // open or close time
     restaurant.monIsClose = monIsClose;
     restaurant.tueIsClose = tueIsClose;
@@ -939,6 +942,9 @@ let editRestaurantProfile = async (obj) => {
     restaurant.friIsClose = friIsClose;
     restaurant.satIsClose = satIsClose;
     restaurant.sunIsClose = sunIsClose;
+
+    // status
+    restaurant.status = status;
 
     restaurant.save();
   });
