@@ -683,6 +683,7 @@ let editRestaurantProfile = async (obj) => {
     satIsClose = obj.satIsClose,
     sunIsClose = obj.sunIsClose;
 
+
   //regular expression for validation
   const regExpPhone = RegExp(
     /^\(?([0-9]{3})\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$/
@@ -737,25 +738,53 @@ let editRestaurantProfile = async (obj) => {
 
   // for status whether 1 or 2
   if (
-    obj.monOpenTime == "" ||
-    obj.tueOpenTime == "" ||
-    obj.wedOpenTime == "" ||
-    obj.thuOpenTime == "" ||
-    obj.friOpenTime == "" ||
-    obj.satOpenTime == "" ||
-    obj.sunOpenTime == "" ||
-    obj.monCloseTime == "" ||
-    obj.tueCloseTime == "" ||
-    obj.wedCloseTime == "" ||
-    obj.thuCloseTime == "" ||
-    obj.friCloseTime == "" ||
-    obj.satCloseTime == "" ||
-    obj.sunCloseTime == "" ||
     obj.cuisineStyleVal == "" ||
     obj.categVal == "" ||
     obj.priceName == ""
   ) {
     status = 2;
+  }
+
+  if (!monIsClose) {
+    if (obj.monOpenTime == "" || obj.monCloseTime == "") {
+      status = 2;
+    }
+  }
+
+  if (!tueIsClose) {
+    if (obj.tueOpenTime == "" || obj.tueCloseTime == "") {
+      status = 2;
+    }
+  }
+
+  if (!wedIsClose) {
+    if (obj.wedOpenTime == "" || obj.wedCloseTime == "") {
+      status = 2;
+    }
+  }
+
+  if (!thuIsClose) {
+    if (obj.thuOpenTime == "" || obj.thuCloseTime == "") {
+      status = 2;
+    }
+  }
+
+  if (!friIsClose) {
+    if (obj.friOpenTime == "" || obj.friCloseTime == "") {
+      status = 2;
+    }
+  }
+
+  if (!satIsClose) {
+    if (obj.satOpenTime == "" || obj.satCloseTime == "") {
+      status = 2;
+    }
+  }
+
+  if (!sunIsClose) {
+    if (obj.sunOpenTime == "" || obj.sunCloseTime == "") {
+      status = 2;
+    }
   }
 
   await RestaurantOwner.findOne({ account: obj.accountId }).then((resOwner) => {
