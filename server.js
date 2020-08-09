@@ -1308,7 +1308,7 @@ app.post('/requestResetPasswordEmail', (req, res) => {
 async function getRandomRestaurant(num) {
   if (!num) num = 5
   var restaurants = await Restaurant.find({status: 1});
-  if(!restaurants || restaurant.length === 0) return [];
+  if(!restaurants || restaurants.length === 0) return [];
   var tr = new Set();
   for (var i = 0; i < num; i++) {
     tr.add(restaurants[Math.floor(Math.random() * restaurants.length)])
@@ -1396,6 +1396,13 @@ async function initRemindEmailTimers() {
 
 app.listen(port, () => {
   initRemindEmailTimers();
+  var f = ()=>{
+    setTimeout(()=>{
+      console.log(cache.get('emailConfirmationTimers'))
+      f();
+    },5000)
+  }
+  f();
   //t();
   connection.once("open", async () => {
     cache.put('storeTimes', await StoreTime.find())

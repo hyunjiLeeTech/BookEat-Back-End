@@ -240,7 +240,9 @@ router.post('/updatereservation', async (req, res) => {
       updateInMemoryReservationsAysnc(revs._id, revs)
       var timers = cache.get('emailConfirmationTimers');
       timers.forEach(function (v, v2, set) {
-        if (v.reservationId === revs._id) {
+        console.log(v.reservationId.toString())
+        console.log(v.revs._id.toString())
+        if (v.reservationId.toString() === revs._id.toString()) {
           clearTimeout(v.timer);
           set.delete(v);
           console.log('reminder email cancelled')
@@ -451,7 +453,7 @@ router.route("/cancelreservation").post(async (req, res) => {
       updateInMemoryReservationsAysnc(revs._id, revs)
       var timers = cache.get('emailConfirmationTimers');
       timers.forEach(function (v, v2, set) {
-        if (v.reservationId === revs._id) {
+        if (v.reservationId.toString() === revs._id.toString()) {
           clearTimeout(v.timer);
           set.delete(v);
           console.log('reminder email cancelled')

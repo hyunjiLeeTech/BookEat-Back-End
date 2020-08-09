@@ -73,6 +73,8 @@ router.route("/editmenu").post((req, res) => {
         if (req.body.menuImageId) {
             menu.menuImageId = req.body.menuImageId
         }
+        console.log(req.body.menuPrice)
+        console.log(menu)
         menu.save();
         res.json({ errcode: 0, errmsg: 'success edit menu' })
     }).catch(err => {
