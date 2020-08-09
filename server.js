@@ -1200,6 +1200,7 @@ app.post('/search', async (req, res) => {
     tr = new Set([...tr, ...menusfiltered]);
     tr.forEach((v1, v2, set) => {
       if (!isRestaurantAvailableAtDateTime(v1, req.body.dateTime)) set.delete(v1)
+      if(v1.status !== 1) set.delete(v1);
     })
 
     //TODO: filter out restaurant with status:?
@@ -1306,7 +1307,7 @@ app.post('/requestResetPasswordEmail', (req, res) => {
 
 async function getRandomRestaurant(num) {
   if (!num) num = 5
-  var restaurants = await Restaurant.find();
+  var restaurants = await Restaurant.find({status: 1});
   var tr = new Set();
   for (var i = 0; i < num; i++) {
     tr.add(restaurants[Math.floor(Math.random() * restaurants.length)])
