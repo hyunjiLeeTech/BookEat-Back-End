@@ -286,7 +286,7 @@ app.post('/loginExternal', async function (req, res) {
       return res.json({ errcode: 1, errmsg: 'failed to valided google account' })
     })  
   }else if(Number.parseInt(externalType) === 1){
-    
+
   }
 
   // Axios({
@@ -1339,7 +1339,14 @@ async function initRemindEmailTimers() {
   }
   var reservations = await Reservation.find({ status: 2 }).populate('customer').populate("restaurant");
   for (var popedRevs of reservations) {
-    var emailaddress = (await Account.findById(popedRevs.customer.account)).email;
+    var emailaddress;
+    try{
+      emailaddress = (await Account.findById(popedRevs.customer.account)).email;
+    }catch(err){
+      console.log(err)
+      continue;
+    }
+    
     if (!emailaddress || emailaddress === null) {
       console.log('email address is null in restaurant reserve')
       continue;
