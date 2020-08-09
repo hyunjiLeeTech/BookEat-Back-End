@@ -22,7 +22,7 @@ const cache = require('memory-cache') //in-memory cache
 const moment = require('moment')
 const nodemailer = require('nodemailer')
 const frontEndUrl = 'http://localhost:3000' //FIXME: testing, change to heroku url
-
+const Axios = require('axios')
 var gfs;
 
 
@@ -111,9 +111,10 @@ const { filter } = require("methods");
 const Menu = require("./models/menu.model");
 const discountRouter = require("./routes/discount");
 const reviewRouter = require("./routes/review");
-const { update } = require("./models/customer.model");
+const { update, replaceOne } = require("./models/customer.model");
 const Discount = require("./models/discount.model");
 const StoreTime = require("./models/storeTime.model");
+const ExternalLogin = require("./models/externalLogin.model");
 
 // app.use
 app.use(
@@ -254,6 +255,50 @@ app.get(
   }
 );
 
+
+
+app.post('/loginExternal', async function (req, res) {
+  var token = req.body.token;
+  var externalType = req.body.externalType
+  if(Number.parseInt(externalType) === 1){
+    Axios({
+      url: 'https://www.googleapis.com/oauth2/v2/userinfo',
+      method: 'get',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }).then(async resp => {
+      var external = await ExternalLogin.findOne({ externalId: resp.data.id })
+      if (!external) return res.json({ errcode: 2, profile: resp.data, errmsg: 'sign up needed' })
+      var user = await Account.findById(external.account);
+      user.token = "";
+      const token = jwt.sign(user.toJSON(), secret.secret, {
+        expiresIn: "30 days",
+      });
+      user.token = token;
+      user.save().then((user)=>{
+        user.token = '';
+        user.password = '';
+        res.json({ errcode: 0, user: user, jwt: token })
+      })
+    }).catch(err => {
+      console.log(err)
+      return res.json({ errcode: 1, errmsg: 'failed to valided google account' })
+    })  
+  }else if(Number.parseInt(externalType) === 1){
+    
+  }
+
+  // Axios({
+  //   url: 'https://graph.facebook.com/me',
+  //   method: 'get',
+  //   params: {
+  //     fields: ['id', 'email', 'first_name', 'last_name'].join(','),
+  //     access_token: accesstoken,
+  //   },
+  // });
+})
+
 //login
 app.post("/login", function (req, res, next) {
   passport.authenticate("local", { session: false }, function (
@@ -321,12 +366,14 @@ let addCustomerAsync = async function (obj) {
   const phoneNumber = obj.phoneNumber;
   const password = obj.password;
   const userTypeId = obj.userTypeId;
+  const emailVerified = obj.emailVerified ? true : false
 
   const newAccount = new Account({
     email,
     password,
     userTypeId,
     isActive: true,
+    emailVerified: emailVerified
   });
 
   let message = "";
@@ -405,6 +452,49 @@ function sendEmail(options, callback) {
     if (typeof callback === 'function') callback(error, info)
   })
 }
+
+app.post('/signupExternal', async function (req, res) {
+  var token = req.body.token;
+  var externalType = req.body.externalType
+  Axios({
+    url: 'https://www.googleapis.com/oauth2/v2/userinfo',
+    method: 'get',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }).then(async resp => {
+    var external = await ExternalLogin.findOne({ externalId: resp.data.id })
+    var account = await Account.findOne({ email: resp.data.email })
+    if (external) return res.json({ errcode: 2, errmsg: 'This email is already used.' })
+    if (account) return res.json({ errcode: 3, errmsg: 'This email is already used.' })
+    var obj = {
+      firstName: req.body.firstname,
+      lastName: req.body.lastname,
+      email: resp.data.email,
+      phoneNumber: req.body.phonenumber,
+      password: new Date().getTime().toString(),
+      userTypeId: 1,
+      emailVerified: true,
+    };
+    addCustomerAsync(obj).then(async (cus) => {
+      var acc = await Account.findById(cus.account);
+      var e = new ExternalLogin({
+        account: acc,
+        externalId: resp.data.id,
+        externalType: 1,
+      })
+      await e.save();
+      return res.json({ errcode: 0, errmsg: 'success' })
+    }).catch(err => {
+      console.log(err)
+      return res.json({ errcode: 4, errmsg: 'error' })
+    })
+  }).catch(err => {
+    console.log(token)
+    return res.json({ errcode: 1, errmsg: 'failed to valided google account' })
+  })
+
+})
 
 // post request (/customers/add)
 app.post("/customersignup", (req, res) => {
@@ -1219,7 +1309,7 @@ async function getRandomRestaurant(num) {
   var restaurants = await Restaurant.find();
   var tr = new Set();
   for (var i = 0; i < num; i++) {
-    tr.push(restaurants(Math.floor(Math.random() * restaurants.length)))
+    tr.add(restaurants[Math.floor(Math.random() * restaurants.length)])
   }
   tr = Array.from(tr);
   return tr;
@@ -1227,17 +1317,17 @@ async function getRandomRestaurant(num) {
 
 app.get('/daily', async (req, res) => {
   var restaurants = await getRandomRestaurant();
-  return res.json({errcode: 0, restaruants: restaurants})
+  return res.json({ errcode: 0, restaruants: restaurants })
 })
 
 app.get('/featured', async (req, res) => {
   var restaurants = await getRandomRestaurant();
-  return res.json({errcode: 0, restaruants: restaurants})
+  return res.json({ errcode: 0, restaruants: restaurants })
 })
 
 app.get('/favorite', async (req, res) => {
   var restaurants = await getRandomRestaurant();
-  return res.json({errcode: 0, restaruants: restaurants})
+  return res.json({ errcode: 0, restaruants: restaurants })
 })
 
 
