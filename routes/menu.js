@@ -43,7 +43,8 @@ router.route("/addmenu").post((req, res) => {
     var menuPrice = req.body.menuPrice;
     var menuDescript = req.body.menuDescript;
     var menuImageId = req.body.menuImageId;
-    var menuFoodType = req.body.menuType; // TODO: check 
+    var menuFoodType = req.body.menuType; // TODO: check
+    var allergy = req.body.menuAllergy;
 
     //console.log(imageUrl);
 
@@ -53,13 +54,16 @@ router.route("/addmenu").post((req, res) => {
         menuName,
         menuPrice,
         menuDescript,
+        allergy,
         menuFoodType,
         menuImageId
     }
 
     addMenuAsync(obj).then(() => {
+        console.log("success");
         res.json({ errcode: 0, errmsg: "success add menu" })
     }).catch(err => {
+        console.log("failed");
         res.json({ errcode: 1, errmsg: err })
     });
 })
@@ -116,6 +120,7 @@ async function addMenuAsync(obj) {
     const menuDescript = obj.menuDescript;
     const menuImageId = obj.menuImageId;
     const foodType = obj.menuFoodType;
+    const allergy = obj.allergy;
     const isActive = true;
 
     let message = "";
@@ -138,6 +143,7 @@ async function addMenuAsync(obj) {
         menuDescript,
         isActive,
         foodType,
+        allergy,
         restaurantId: restaurant._id,
         menuImageId
     })
