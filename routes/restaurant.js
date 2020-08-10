@@ -525,12 +525,12 @@ router.route("/reserve").post(async (req, res) => {
           subject: 'Your reservation comes soon',
           html: htmlMessageConfirm
         };
-        if (moment(new Date(popedRevs.dateTime)).diff(moment(new Date()), 'minutes') <= 120) {
+        if (moment(new Date(popedRevs.dateTime)).diff(moment(new Date()), 'minutes') <= 30) {
           transporter.sendMail(mailOptionsConfirm, (error, info) => {
             if (error) console.log(error)
           })
         } else {
-          var timevalue = moment(new Date(popedRevs.dateTime)).diff(moment(new Date()), 'milliseconds') - 7200000;
+          var timevalue = moment(new Date(popedRevs.dateTime)).diff(moment(new Date()), 'milliseconds') - 1800000;
           var timers = cache.get('emailConfirmationTimers');
           if (timers === null) {
             timers = cache.put('emailConfirmationTimers', new Set());

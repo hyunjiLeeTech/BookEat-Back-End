@@ -1312,14 +1312,28 @@ async function t() {
   }).catch(err => console.log(err))
 }
 
+app.post('/validateResetPasswrodTimestamp', async (req, res) => {
+  var id = req.body.accountId;
+  var timestamp = req.body.timestamp;
+  Account.findById(id).then((acc) => {
+    if (acc.resetTimeStamp !== 0 && acc.resetTimeStamp.toString() === timestamp.toString()) {
+      if(acc.resetTimeStamp === 0) return res.json({ errcode: 3, errmsg: 'This link is not avaiable anymore' })
+      if(new Date.getTime() - acc.resetTimeStamp > 86400000) return res.json({ errcode: 4, errmsg: 'This link has expired' })
+      return res.json({ errcode: 0, errmsg: 'success' })
+    } else {
+      return res.json({ errcode: 2, errmsg: 'incorrect timestamp' })
+    }
+  }).catch(err => {
+    console.log(err)
+    return res.json({ errcode: 1, errmsg: 'something wrong' })
+  })
+})
+
 app.post('/resetPasswordWithTimestamp', async (req, res) => {
   var id = req.body.accountId;
   var timestamp = req.body.timestamp;
   var newPassword = req.body.newPassword;
-  console.log(timestamp)
-  console.log(newPassword)
-  console.log(id)
-  await sleep(2000);
+  await sleep(2000); //avoid hacking, reply the client with a 2s delay 
   Account.findById(id).then((acc) => {
     if (acc.resetTimeStamp !== 0 && acc.resetTimeStamp.toString() === timestamp.toString()) {
       acc.password = newPassword;
@@ -1431,7 +1445,7 @@ async function initRemindEmailTimers() {
       subject: 'Your reservation comes soon',
       html: htmlMessageConfirm
     };
-    if (moment(new Date(popedRevs.dateTime)).diff(moment(new Date()), 'minutes') <= 120) {
+    if (moment(new Date(popedRevs.dateTime)).diff(moment(new Date()), 'minutes') <= 30) {
       console.log('reservation ' + popedRevs._id + ' Reminder Sent')
       transporter.sendMail(mailOptionsConfirm, (error, info) => {
         if (error) console.log(error)
@@ -1441,7 +1455,7 @@ async function initRemindEmailTimers() {
         popedRevs.save();
       }
     } else {
-      var timevalue = moment(new Date(popedRevs.dateTime)).diff(moment(new Date()), 'milliseconds') - 7200000;
+      var timevalue = moment(new Date(popedRevs.dateTime)).diff(moment(new Date()), 'milliseconds') - 1800000;
       var timers = cache.get('emailConfirmationTimers');
       if (timers === null) {
         timers = cache.put('emailConfirmationTimers', new Set());
