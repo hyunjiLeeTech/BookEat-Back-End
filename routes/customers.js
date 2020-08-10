@@ -10,7 +10,7 @@ const nodemailer = require('nodemailer');
 const Table = require("../models/table.model");
 const FoodOrder = require("../models/foodOrder.model");
 const Menu = require("../models/menu.model");
-const frontEndUrl = 'http://localhost:3000' //FIXME: testing, change to heroku url
+const frontEndUrl = 'https://bookeatfront.herokuapp.com' //FIXME: testing, change to heroku url
 var transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {

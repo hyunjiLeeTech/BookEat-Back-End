@@ -21,7 +21,7 @@ const port = process.env.PORT || 5000;
 const cache = require('memory-cache') //in-memory cache
 const moment = require('moment')
 const nodemailer = require('nodemailer')
-const frontEndUrl = 'http://localhost:3000' //FIXME: testing, change to heroku url
+const frontEndUrl = 'https://bookeatfront.herokuapp.com' //FIXME: testing, change to heroku url
 const Axios = require('axios')
 var gfs;
 
