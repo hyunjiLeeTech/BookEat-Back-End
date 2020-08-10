@@ -38,8 +38,12 @@ router.route("/editdiscount").post(async (req, res) => {
     Discount.findById(req.body._id).then((discount) => {
         discount.percent = percent;
         discount.description = description;
-        discount.save();
-        res.json({ errcode: 0, errmsg: 'success edit discount' })
+        discount.save().then(saved=>{
+            res.json({ errcode: 0, errmsg: 'success edit discount', saved:saved })
+        }).catch(err=>{
+            console.error(err)
+            res.json({ errcode: 2, errmsg: 'failed to save' })
+        })
     }).catch(err => {
         res.json({ errcode: 1, errmsg: 'failed to save' })
     })
