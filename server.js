@@ -260,7 +260,7 @@ app.get(
 app.post('/loginExternal', async function (req, res) {
   var token = req.body.token;
   var externalType = req.body.externalType
-  if(Number.parseInt(externalType) === 1){
+  if (Number.parseInt(externalType) === 1) {
     Axios({
       url: 'https://www.googleapis.com/oauth2/v2/userinfo',
       method: 'get',
@@ -276,7 +276,7 @@ app.post('/loginExternal', async function (req, res) {
         expiresIn: "30 days",
       });
       user.token = token;
-      user.save().then((user)=>{
+      user.save().then((user) => {
         user.token = '';
         user.password = '';
         res.json({ errcode: 0, user: user, jwt: token })
@@ -284,9 +284,33 @@ app.post('/loginExternal', async function (req, res) {
     }).catch(err => {
       console.log(err)
       return res.json({ errcode: 1, errmsg: 'failed to valided google account' })
-    })  
-  }else if(Number.parseInt(externalType) === 1){
-
+    })
+  } else if (Number.parseInt(externalType) === 2) {
+    Axios({
+      url: 'https://graph.facebook.com/me',
+      method: 'get',
+      params: {
+        fields: ['id', 'email', 'first_name', 'last_name'].join(','),
+        access_token: token,
+      },
+    }).then(async resp => {
+      var external = await ExternalLogin.findOne({ externalId: resp.data.id })
+      if (!external) return res.json({ errcode: 2, profile: resp.data, errmsg: 'sign up needed' })
+      var user = await Account.findById(external.account);
+      user.token = "";
+      const token = jwt.sign(user.toJSON(), secret.secret, {
+        expiresIn: "30 days",
+      });
+      user.token = token;
+      user.save().then((user) => {
+        user.token = '';
+        user.password = '';
+        res.json({ errcode: 0, user: user, jwt: token })
+      })
+    }).catch(err => {
+      console.log(err)
+      return res.json({ errcode: 1, errmsg: 'failed to valided google account' })
+    });
   }
 
   // Axios({
@@ -354,8 +378,9 @@ let findAccountByEmailAsyc = async function (email) {
 
 // for customer signup
 let addCustomerAsync = async function (obj) {
-  const regExpEmail = RegExp(/^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[A-Za-z]+$/);
-
+  const regExpEmail = RegExp(
+    /^(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])$/
+  );
   const regExpPhone = RegExp(
     /^\(?([0-9]{3})\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$/
   );
@@ -456,43 +481,86 @@ function sendEmail(options, callback) {
 app.post('/signupExternal', async function (req, res) {
   var token = req.body.token;
   var externalType = req.body.externalType
-  Axios({
-    url: 'https://www.googleapis.com/oauth2/v2/userinfo',
-    method: 'get',
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  }).then(async resp => {
-    var external = await ExternalLogin.findOne({ externalId: resp.data.id })
-    var account = await Account.findOne({ email: resp.data.email })
-    if (external) return res.json({ errcode: 2, errmsg: 'This email is already used.' })
-    if (account) return res.json({ errcode: 3, errmsg: 'This email is already used.' })
-    var obj = {
-      firstName: req.body.firstname,
-      lastName: req.body.lastname,
-      email: resp.data.email,
-      phoneNumber: req.body.phonenumber,
-      password: new Date().getTime().toString(),
-      userTypeId: 1,
-      emailVerified: true,
-    };
-    addCustomerAsync(obj).then(async (cus) => {
-      var acc = await Account.findById(cus.account);
-      var e = new ExternalLogin({
-        account: acc,
-        externalId: resp.data.id,
-        externalType: 1,
+  if (Number.parseInt(externalType) === 1) {
+    Axios({
+      url: 'https://www.googleapis.com/oauth2/v2/userinfo',
+      method: 'get',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }).then(async resp => {
+      var external = await ExternalLogin.findOne({ externalId: resp.data.id })
+      var account = await Account.findOne({ email: resp.data.email })
+      if (external) return res.json({ errcode: 2, errmsg: 'This email is already used.' })
+      if (account) return res.json({ errcode: 3, errmsg: 'This email is already used.' })
+      var obj = {
+        firstName: req.body.firstname,
+        lastName: req.body.lastname,
+        email: resp.data.email,
+        phoneNumber: req.body.phonenumber,
+        password: new Date().getTime().toString(),
+        userTypeId: 1,
+        emailVerified: true,
+      };
+      addCustomerAsync(obj).then(async (cus) => {
+        var acc = await Account.findById(cus.account);
+        var e = new ExternalLogin({
+          account: acc,
+          externalId: resp.data.id,
+          externalType: 1,
+        })
+        await e.save();
+        return res.json({ errcode: 0, errmsg: 'success' })
+      }).catch(err => {
+        console.log(err)
+        return res.json({ errcode: 4, errmsg: 'error' })
       })
-      await e.save();
-      return res.json({ errcode: 0, errmsg: 'success' })
+    }).catch(err => {
+      console.log(token)
+      return res.json({ errcode: 1, errmsg: 'failed to valided google account' })
+    })
+  }
+  else if (Number.parseInt(externalType) === 2) {
+    Axios({
+      url: 'https://graph.facebook.com/me',
+      method: 'get',
+      params: {
+        fields: ['id', 'email', 'first_name', 'last_name'].join(','),
+        access_token: token,
+      },
+    }).then(async resp => {
+      var external = await ExternalLogin.findOne({ externalId: resp.data.id })
+      var account = await Account.findOne({ email: resp.data.email })
+      if (external) return res.json({ errcode: 2, errmsg: 'This email is already used.' })
+      if (account) return res.json({ errcode: 3, errmsg: 'This email is already used.' })
+      var obj = {
+        firstName: req.body.firstname,
+        lastName: req.body.lastname,
+        email: resp.data.email,
+        phoneNumber: req.body.phonenumber,
+        password: new Date().getTime().toString(),
+        userTypeId: 1,
+        emailVerified: true,
+      };
+      addCustomerAsync(obj).then(async (cus) => {
+        var acc = await Account.findById(cus.account);
+        var e = new ExternalLogin({
+          account: acc,
+          externalId: resp.data.id,
+          externalType: 2,
+        })
+        await e.save();
+        return res.json({ errcode: 0, errmsg: 'success' })
+      }).catch(err => {
+        console.log(err)
+        return res.json({ errcode: 4, errmsg: 'error' })
+      })
     }).catch(err => {
       console.log(err)
-      return res.json({ errcode: 4, errmsg: 'error' })
-    })
-  }).catch(err => {
-    console.log(token)
-    return res.json({ errcode: 1, errmsg: 'failed to valided google account' })
-  })
+      return res.json({ errcode: 1, errmsg: 'failed to valided facebook account' })
+    });
+  }
+
 
 })
 
@@ -1200,7 +1268,7 @@ app.post('/search', async (req, res) => {
     tr = new Set([...tr, ...menusfiltered]);
     tr.forEach((v1, v2, set) => {
       if (!isRestaurantAvailableAtDateTime(v1, req.body.dateTime)) set.delete(v1)
-      if(v1.status !== 1) set.delete(v1);
+      if (v1.status !== 1) set.delete(v1);
     })
 
     //TODO: filter out restaurant with status:?
@@ -1307,8 +1375,8 @@ app.post('/requestResetPasswordEmail', (req, res) => {
 
 async function getRandomRestaurant(num) {
   if (!num) num = 5
-  var restaurants = await Restaurant.find({status: 1});
-  if(!restaurants || restaurants.length === 0) return [];
+  var restaurants = await Restaurant.find({ status: 1 });
+  if (!restaurants || restaurants.length === 0) return [];
   var tr = new Set();
   for (var i = 0; i < num; i++) {
     tr.add(restaurants[Math.floor(Math.random() * restaurants.length)])
@@ -1342,13 +1410,13 @@ async function initRemindEmailTimers() {
   var reservations = await Reservation.find({ status: 2 }).populate('customer').populate("restaurant");
   for (var popedRevs of reservations) {
     var emailaddress;
-    try{
+    try {
       emailaddress = (await Account.findById(popedRevs.customer.account)).email;
-    }catch(err){
+    } catch (err) {
       console.log(err)
       continue;
     }
-    
+
     if (!emailaddress || emailaddress === null) {
       console.log('email address is null in restaurant reserve')
       continue;
@@ -1396,13 +1464,6 @@ async function initRemindEmailTimers() {
 
 app.listen(port, () => {
   initRemindEmailTimers();
-  var f = ()=>{
-    setTimeout(()=>{
-      console.log(cache.get('emailConfirmationTimers'))
-      f();
-    },5000)
-  }
-  f();
   //t();
   connection.once("open", async () => {
     cache.put('storeTimes', await StoreTime.find())
