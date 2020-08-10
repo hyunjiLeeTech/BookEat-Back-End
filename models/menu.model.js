@@ -25,6 +25,10 @@ const menuSchema = new Schema(
             type: Boolean,
             required: true,
         },
+        allergy: {
+            type: String,
+            required: true
+        },
         restaurantId: { type: Schema.Types.ObjectId, ref: "Restaurant" },
         menuImageId: { type: String }
     },
