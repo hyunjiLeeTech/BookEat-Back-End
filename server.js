@@ -617,7 +617,7 @@ let addRestaurantOwnerAsync = async function (obj) {
     /^\(?([0-9]{3})\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$/
   );
 
-  const regExpPostalCode = RegExp(/^\d{5}-\d{4}|\d{5}|[A-Z]\d[A-Z] \d[A-Z]\d$/);
+  const regExpPostalCode = RegExp(/^(?!.*[DFIOQU])[A-VXY][0-9][A-Z] ?[0-9][A-Z][0-9]$/);
 
   const regExpBusinessNum = RegExp(/^[0-9]{9}$/);
 
