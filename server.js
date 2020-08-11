@@ -1043,8 +1043,7 @@ async function getTablesWithRestaurantsUsingPersionAndDateTimeAsync(persons, dat
 
 
   for (var t of tables) {
-    //var eatingTime = t.restaurant.eatingTime; //FIXME: after eating time finished
-    var eatingTime = 2;
+    var eatingTime = t.restaurant.eatingTime ? t.restaurant.eatingTime : 2;
     promises.push(isTableAvailableAtDateTimeInMemory(t._id, dateTime, eatingTime))
   }
   var tableResults = await Promise.all(promises); //an array of boolean value
@@ -1317,8 +1316,8 @@ app.post('/validateResetPasswrodTimestamp', async (req, res) => {
   var timestamp = req.body.timestamp;
   Account.findById(id).then((acc) => {
     if (acc.resetTimeStamp !== 0 && acc.resetTimeStamp.toString() === timestamp.toString()) {
-      if(acc.resetTimeStamp === 0) return res.json({ errcode: 3, errmsg: 'This link is not avaiable anymore' })
-      if(new Date.getTime() - acc.resetTimeStamp > 86400000) return res.json({ errcode: 4, errmsg: 'This link has expired' })
+      if (acc.resetTimeStamp === 0) return res.json({ errcode: 3, errmsg: 'This link is not avaiable anymore' })
+      if (new Date.getTime() - acc.resetTimeStamp > 86400000) return res.json({ errcode: 4, errmsg: 'This link has expired' })
       return res.json({ errcode: 0, errmsg: 'success' })
     } else {
       return res.json({ errcode: 2, errmsg: 'incorrect timestamp' })

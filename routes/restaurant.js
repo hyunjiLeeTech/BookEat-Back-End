@@ -27,17 +27,17 @@ var transporter = nodemailer.createTransport({
 
 function isRestaurantAvailableAtDateTime(restaurant, dateTime) {
   var times = cache.get('storeTimes');
-  if (times === null){
+  if (times === null) {
     console.log('No Times in memory!!')
     return false;
   }
-    
+
   var weekDay = new Date(dateTime).getDay();
   var openId = '', closeId = '';
-  var getTimeString = function(id){
-    if(id === '') return null;
-    for(var t of times){
-      if(t._id.toString() === id.toString()){
+  var getTimeString = function (id) {
+    if (id === '') return null;
+    for (var t of times) {
+      if (t._id.toString() === id.toString()) {
         return t.storeTimeName;
       }
     }
@@ -89,10 +89,10 @@ function isRestaurantAvailableAtDateTime(restaurant, dateTime) {
   }
   var openTime = getTimeString(openId)
   var closeTime = getTimeString(closeId);
-  if(openTime === null || closeTime === null) return false;
-  openTime = new Date(moment(new Date(dateTime)).format('YYYY-MM-DD') + ' ' +openTime)
-  closeTime = new Date(moment(new Date(dateTime)).format('YYYY-MM-DD') + ' '+ closeTime)
-  if(new Date(dateTime) > openTime && new Date(dateTime) < closeTime) return true
+  if (openTime === null || closeTime === null) return false;
+  openTime = new Date(moment(new Date(dateTime)).format('YYYY-MM-DD') + ' ' + openTime)
+  closeTime = new Date(moment(new Date(dateTime)).format('YYYY-MM-DD') + ' ' + closeTime)
+  if (new Date(dateTime) > openTime && new Date(dateTime) < closeTime) return true
   else return false;
 }
 
@@ -160,8 +160,8 @@ async function isTableAvaliableAtTimeAsync(table, datetime, eatingTime) {
     table: table,
     status: 2,
     dateTime: {
-      $gte: moment(datetime).add(0 - eatingTime, 'h').toDate(),
-      $lte: moment(datetime).add(eatingTime, 'h').toDate()
+      $gt: moment(datetime).add(0 - eatingTime, 'h').toDate(),
+      $lt: moment(datetime).add(eatingTime, 'h').toDate()
     }
   })
   if ((await reservation).length > 0) {
@@ -198,16 +198,14 @@ router.post('/getRestaurantOwnerAndManagerViaRestaurantId', async (req, res) => 
 
 //TODO: clean code, security update
 router.route('/tableinfo').post(async (req, res) => {
-  var eatingTime = 2; //2 hours, TODO: this should refer restauraunt settings
 
   var obj = {
     resId: req.body.resId,
     numOfPeople: req.body.numOfPeople,
     dateTime: req.body.dateTime,
   };
-  console.log(obj);
   var rest = await Restaurant.findOne({ _id: obj.resId });
-  console.log(rest);
+  var eatingTime = rest.eatingTime ? rest.eatingTime : 2;
   var ts = [];
   try {
     ts = await Table.find({ restaurant: (await rest)._id })
@@ -353,7 +351,7 @@ router.route("/deleteTable").post(async (req, res) => {
 
 //TODO: testing, securty test
 router.route("/cancelreservation").post(async (req, res) => {
-  if (req.userTypeId === 1) {
+  if (req.user.userTypeId === 1) {
     res.status(401).send('access denied');
     return;
   }
@@ -399,12 +397,60 @@ router.route("/cancelreservation").post(async (req, res) => {
   }
 })
 
-//TODO: testing, security test
 router.route("/confirmattendence").post(async (req, res) => {
   try {
+    if(req.user.userTypeId === 1) return res.status(401).send('permission denied')
     var reservation = await getReservationByIdAsync(req.body.reservationId);
     reservation.status = 0;
-    reservation.save().then(() => {
+    reservation.save().then((reservation) => {
+      updateInMemoryReservationsAysnc(reservation._id, reservation)
+      res.json({ errcode: 0, errmsg: "success" })
+    }).catch(err => {
+      res.json({ errcode: 1, errmsg: err })
+    })
+  } catch (err) {
+    console.log(err);
+    res.status(500).send("internal error")
+  }
+})
+
+router.route("/notAttend").post(async (req, res) => {
+  try {
+    if(req.user.userTypeId === 1) return res.status(401).send('permission denied')
+    var reservation = await getReservationByIdAsync(req.body.reservationId);
+    reservation.status = 1;
+    reservation.save().then(async (reservation) => {
+      var cus = await Customer.findById(reservation.customer);
+      var acc = await Account.findById(cus.account);
+      cus.noShowCount += 1;
+      cus = await cus.save();
+      var emailaddress = acc.email;
+      if (cus.noShowCount === 10) {
+        acc.isActive = false;
+        await acc.save();
+        var htmlMessage = '<h1>You missed your reservation.</h1><p>The restaurant just reported you missed an reservation which is at ' + moment(new Date(reservation.dateTime)).format('YYYY-MM-DD HH:mm') + '</p>' +
+          '<p>For more information, please login to your BookEat account and go to reservation history page.</p>' +
+          '<p>As a result of keep missing reservation, we blocked your BookEat account. For more inforamtion, please contact BookEat.</p>'
+        var mailOptions = {
+          from: 'a745874355@gmail.com',
+          to: emailaddress,
+          subject: 'Account blocked due to missing reservation.',
+          html: htmlMessage
+        };
+        transporter.sendMail(mailOptions)
+      } else {
+        var htmlMessage = '<h1>You missed your reservation.</h1><p>The restaurant just reported you missed an reservation which is at ' + moment(new Date(reservation.dateTime)).format('YYYY-MM-DD HH:mm') + '</p>' +
+          '<p>For more information, please login to your BookEat account and go to reservation history page.</p>' +
+          '<p>We understand your inconvinence. However, keeping missing reservation will result in your account to be blocked. For more inforamtion, please contact BookEat.</p>'
+        var mailOptions = {
+          from: 'a745874355@gmail.com',
+          to: emailaddress,
+          subject: 'Missed reservation.',
+          html: htmlMessage
+        };
+        transporter.sendMail(mailOptions)
+      }
+      updateInMemoryReservationsAysnc(reservation._id, reservation)
       res.json({ errcode: 0, errmsg: "success" })
     }).catch(err => {
       res.json({ errcode: 1, errmsg: err })
@@ -450,9 +496,9 @@ router.route("/reserve").post(async (req, res) => {
     return res.json({ errcode: 5, errmsg: 'Cannot reserve in more that 24 days in advance' })
   }
 
-  var eatingTime = 2; //TODO: get eating time from restaruant database
   var table = await Table.findOne({ _id: obj.tableId }).populate('restaurant');
-  if(!isRestaurantAvailableAtDateTime(table.restaurant, req.body.dateTime)) return res.json({ errcode: 6, errmsg: "Restaurant is not open at the time you selected" })
+  var eatingTime = table.restaurant.eatingTime ? table.restaurant.eatingTime : 2;
+  if (!isRestaurantAvailableAtDateTime(table.restaurant, req.body.dateTime)) return res.json({ errcode: 6, errmsg: "Restaurant is not open at the time you selected" })
   if (!table.status) {
     res.json({ errcode: 1, errmsg: "Table closed" });
     return;
