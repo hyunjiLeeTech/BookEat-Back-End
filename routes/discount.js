@@ -9,7 +9,7 @@ router.route("/getdiscounts").get(async (req, res) => {
 
         var discounts = await Discount.find({
             restaurantId: restaurant._id,
-            isActive: true
+            isDeleted: false
         });
         res.json({ errcode: 0, discounts: discounts });
     } catch (err) {
@@ -34,13 +34,15 @@ router.route("/adddiscount").post(async (req, res) => {
 router.route("/editdiscount").post(async (req, res) => {
     var percent = req.body.percent;
     var description = req.body.promdescription;
+    var isActive = req.body.isActive;
 
     Discount.findById(req.body._id).then((discount) => {
         discount.percent = percent;
         discount.description = description;
-        discount.save().then(saved=>{
-            res.json({ errcode: 0, errmsg: 'success edit discount', saved:saved })
-        }).catch(err=>{
+        discount.isActive = isActive;
+        discount.save().then(saved => {
+            res.json({ errcode: 0, errmsg: 'success edit discount', saved: saved })
+        }).catch(err => {
             console.error(err)
             res.json({ errcode: 2, errmsg: 'failed to save' })
         })
@@ -49,13 +51,13 @@ router.route("/editdiscount").post(async (req, res) => {
     })
 })
 
-router.route("/deletediscount").post(async (req, res) => {
+router.post("/deletediscount", (req, res) => {
     Discount.findById(req.body._id).then((discount) => {
-        discount.isActive = false;
+        discount.isDeleted = true;
         discount.save();
-        res.json({ errcode: 0, errmsg: 'success delete discount' })
+        res.json({ errcode: 0, errmsg: 'success delete discount' });
     }).catch(err => {
-        res.json({ errcode: 1, errmsg: err })
+        res.json({ errcode: 1, errmsg: err });
     })
 })
 

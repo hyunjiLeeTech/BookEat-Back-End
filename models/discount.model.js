@@ -6,7 +6,8 @@ const dicountSchema = new Schema(
     {
         percent: { type: Number, required: true },
         description: { type: String, required: false },
-        isActive: { type: Boolean, required: true },
+        isActive: { type: Boolean, required: true, default: true },
+        isDeleted: { type: Boolean, required: true, default: false },
         restaurantId: { type: Schema.Types.ObjectId, ref: "Restaurant" }
     },
     {
