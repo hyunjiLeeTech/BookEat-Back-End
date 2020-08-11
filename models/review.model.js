@@ -6,7 +6,6 @@ const reviewSchema = new Schema(
         comment: {
             type: String,
             required: true,
-            maxLength: 32,
         },
         food: {
             type: Number,
