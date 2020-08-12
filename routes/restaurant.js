@@ -182,8 +182,11 @@ router.post("/updaterespictures", async (req, res) => {
     (restaurant) => {
       restaurant.pictures = restaurant.pictures.filter(p => p != deletedImage);
       restaurant.save();
+      res.json({ errcode: 1, errmsg: "res profile is updated with deleted image", pictures: restaurant.pictures })
     }
-  );
+  ).catch(err => {
+    res.json({ errcode: 2, errmsg: "res profile is not updated with deleted image" });
+  });
 
 })
 
@@ -399,7 +402,7 @@ router.route("/cancelreservation").post(async (req, res) => {
 
 router.route("/confirmattendence").post(async (req, res) => {
   try {
-    if(req.user.userTypeId === 1) return res.status(401).send('permission denied')
+    if (req.user.userTypeId === 1) return res.status(401).send('permission denied')
     var reservation = await getReservationByIdAsync(req.body.reservationId);
     reservation.status = 0;
     reservation.save().then((reservation) => {
@@ -416,7 +419,7 @@ router.route("/confirmattendence").post(async (req, res) => {
 
 router.route("/notAttend").post(async (req, res) => {
   try {
-    if(req.user.userTypeId === 1) return res.status(401).send('permission denied')
+    if (req.user.userTypeId === 1) return res.status(401).send('permission denied')
     var reservation = await getReservationByIdAsync(req.body.reservationId);
     reservation.status = 1;
     reservation.save().then(async (reservation) => {
@@ -767,7 +770,7 @@ router.route("/editresprofile").post((req, res) => {
 
   editRestaurantProfile(obj)
     .then(() => {
-      res.json({ errcode: 0, errmsg: "success" });
+      res.json({ errcode: 0, errmsg: "success edit restaurant profile" });
     })
     .catch((err) => {
       res.json({ errcode: 1, errmsg: err });
