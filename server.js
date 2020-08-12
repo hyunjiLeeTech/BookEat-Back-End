@@ -161,8 +161,13 @@ app.use(
 )
 
 app.post("/addPictures", upload.array('pictures[]', 10), (req, res) => {
-  pictures = req.files;
-  res.json({ errcode: 0, pictures: pictures });
+  try {
+    var pictures = req.files;
+    res.json({ errcode: 0, pictures: pictures });
+
+  } catch (err) {
+    res.json({ ercode: 1, errmsg: err });
+  }
 })
 
 app.post("/addMenuImage", upload.single('menuImage'), (req, res) => {
