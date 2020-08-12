@@ -901,7 +901,6 @@ app.get(
   }
 );
 
-//TODO: menu item, put more information
 app.get("/restaurants/:id", async function (req, res) {
   try {
     var rest = await Restaurant.findOne({ _id: req.params.id })
@@ -1315,6 +1314,7 @@ async function t() {
 app.post('/validateResetPasswrodTimestamp', async (req, res) => {
   var id = req.body.accountId;
   var timestamp = req.body.timestamp;
+  await sleep(1000);
   Account.findById(id).then((acc) => {
     if (acc.resetTimeStamp !== 0 && acc.resetTimeStamp.toString() === timestamp.toString()) {
       if (acc.resetTimeStamp === 0) return res.json({ errcode: 3, errmsg: 'This link is not avaiable anymore' })
