@@ -559,7 +559,7 @@ router.route("/reserve").post(async (req, res) => {
           html: htmlMessage
         };
         transporter.sendMail(mailOptions, (error, info) => {
-          if (error) console.log(err);
+          if (error) console.log(error);
         })
         var htmlMessageConfirm = '<h1>Thans for using BookEat. Your reservation is coming soon</h1>' +
           '<p>Restaurant name: ' + popedRevs.restaurant.resName + '</p>' +
