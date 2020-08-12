@@ -15,11 +15,11 @@ const menuSchema = new Schema(
         },
         menuDescript: {
             type: String,
-            required: false, // TODO: required true
+            required: false,
         },
         foodType: {
             type: String,
-            required: false, // TODO: required true
+            required: false, 
         },
         isActive: {
             type: Boolean,

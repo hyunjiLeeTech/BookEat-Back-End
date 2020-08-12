@@ -43,7 +43,7 @@ router.route("/addmenu").post((req, res) => {
     var menuPrice = req.body.menuPrice;
     var menuDescript = req.body.menuDescript;
     var menuImageId = req.body.menuImageId;
-    var menuFoodType = req.body.menuType; // TODO: check
+    var menuFoodType = req.body.menuType; 
     var allergy = req.body.menuAllergy;
 
     //console.log(imageUrl);

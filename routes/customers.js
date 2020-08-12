@@ -10,7 +10,7 @@ const nodemailer = require('nodemailer');
 const Table = require("../models/table.model");
 const FoodOrder = require("../models/foodOrder.model");
 const Menu = require("../models/menu.model");
-const frontEndUrl = 'https://bookeatfront.herokuapp.com' //FIXME: testing, change to heroku url
+const frontEndUrl = 'https://bookeatfront.herokuapp.com' 
 var transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -441,7 +441,7 @@ router.get('/gerreservationbyid/:id', async (req, res) => {
 
 })
 
-//TODO: testing
+
 router.route("/cancelreservation").post(async (req, res) => {
   try {
     var reservation = await getReservationByIdWithCustomerAsync(req.body.reservationId);

@@ -16,7 +16,7 @@ const FoodOrder = require("../models/foodOrder.model");
 const Menu = require("../models/menu.model");
 const nodemailer = require('nodemailer');
 const Account = require("../models/account.model");
-const frontEndUrl = 'https://bookeatfront.herokuapp.com' //FIXME: testing, change to heroku url
+const frontEndUrl = 'https://bookeatfront.herokuapp.com'
 var transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -196,7 +196,7 @@ router.post('/getRestaurantOwnerAndManagerViaRestaurantId', async (req, res) => 
 
 
 
-//TODO: clean code, security update
+
 router.route('/tableinfo').post(async (req, res) => {
 
   var obj = {
@@ -349,7 +349,7 @@ router.route("/deleteTable").post(async (req, res) => {
 })
 
 
-//TODO: testing, securty test
+
 router.route("/cancelreservation").post(async (req, res) => {
   if (req.user.userTypeId === 1) {
     res.status(401).send('access denied');
@@ -475,7 +475,7 @@ router.route('/getfoodorder/:id').get(async (req, res) => {
   }
 })
 
-//TODO:  clean code, food items
+
 router.route("/reserve").post(async (req, res) => {
   var obj = {
     //resId: req.body.resId,
@@ -604,9 +604,8 @@ router.route("/reserve").post(async (req, res) => {
   }
 })
 
-//TODO: Finish code, reservation update
 router.route('/reservationsofpast14days').get(async (req, res) => {
-  //var u = { _id: '5efa8fe8dd9918ba08ac9ae0', userType: 3, restaurantId: '5efa8fc9dd9918ba08ac9ade' }//FIXME: for debug restaurant maanger
+  //var u = { _id: '5efa8fe8dd9918ba08ac9ae0', userType: 3, restaurantId: '5efa8fc9dd9918ba08ac9ade' }
   console.log(req.user);
   var u = req.user;
   if (u.userTypeId === 2) {
@@ -638,8 +637,8 @@ router.route('/reservationsofpast14days').get(async (req, res) => {
 //for restaurant management
 router.route('/upcomingreservations').get(async (req, res) => {
   //var u = req.user;
-  //var u = {_id: '5efa8fc9dd9918ba08ac9add', userType: 2}//FIXME: for debug restaurant owner 
-  //var u = { _id: '5efa8fe8dd9918ba08ac9ae0', userType: 3, restaurantId: '5efa8fc9dd9918ba08ac9ade' }//FIXME: for debug restaurant maanger
+  //var u = {_id: '5efa8fc9dd9918ba08ac9add', userType: 2}
+  //var u = { _id: '5efa8fe8dd9918ba08ac9ae0', userType: 3, restaurantId: '5efa8fc9dd9918ba08ac9ade' }
   var u = req.user;
   //console.log(u)
 
