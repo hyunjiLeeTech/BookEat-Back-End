@@ -21,7 +21,7 @@ const port = process.env.PORT || 5000;
 const cache = require('memory-cache') //in-memory cache
 const moment = require('moment')
 const nodemailer = require('nodemailer')
-const frontEndUrl = 'https://bookeatfront.herokuapp.com' //FIXME: testing, change to heroku url
+const frontEndUrl = 'https://bookeatfront.herokuapp.com' 
 const Axios = require('axios')
 var gfs;
 
@@ -124,7 +124,7 @@ app.use(
 );
 app.use(
   "/restaurant",
-  passport.authenticate("jwt", { session: false }), //FIXME: DEBUGGING
+  passport.authenticate("jwt", { session: false }), 
   restaurantRouter
 );
 app.use(
@@ -920,7 +920,7 @@ app.get("/restaurants/:id", async function (req, res) {
       .populate('satCloseTimeId')
       .populate('sunCloseTimeId')
 
-    var discount = await Discount.findOne({ restaurantId: rest._id });
+    var discount = await Discount.find({ restaurantId: rest._id });
     res.json({ errcode: 0, restaurant: rest, discount: discount });
   } catch (err) {
     console.log(err);
@@ -1046,7 +1046,6 @@ async function getTablesWithRestaurantsUsingPersionAndDateTimeAsync(persons, dat
     promises.push(isTableAvailableAtDateTimeInMemory(t._id, dateTime, eatingTime))
   }
   var tableResults = await Promise.all(promises); //an array of boolean value
-  //TODO: filter tables using number of persons
 
 
   for (var index in tables) {
@@ -1270,7 +1269,6 @@ app.post('/search', async (req, res) => {
       if (v1.status !== 1) set.delete(v1);
     })
 
-    //TODO: filter out restaurant with status:?
 
     res.json({ errcode: 0, restaurants: Array.from(tr) });
   } catch (err) {
