@@ -1124,9 +1124,10 @@ function filterCategory(fitlers, set) {
 function filterRestaurantsByKeyword(keyword, restaurants) {
   if (!keyword || keyword === '' || keyword === ' ') return restaurants;
   var tr = new Set();
-  for (var restaruant of restaurants) {
-    if (restaruant.resName.toLowerCase().includes(keyword) || (restaruant.restaurantDescription.toLowerCase().includes(keyword))) {
-      tr.add(restaruant)
+  for (var restaurant of restaurants) {
+    if(!restaurant.restaurantDescription) restaurant.restaurantDescription = '';
+    if (restaurant.resName.toLowerCase().includes(keyword) || (restaurant.restaurantDescription.toLowerCase().includes(keyword))) {
+      tr.add(restaurant)
     }
   }
   return tr;

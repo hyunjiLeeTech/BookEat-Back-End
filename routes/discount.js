@@ -33,7 +33,7 @@ router.route("/adddiscount").post(async (req, res) => {
 
 router.route("/editdiscount").post(async (req, res) => {
     var percent = req.body.percent;
-    var description = req.body.promdescription;
+    var description = req.body.description;
     var isActive = req.body.isActive;
 
     Discount.findById(req.body._id).then((discount) => {

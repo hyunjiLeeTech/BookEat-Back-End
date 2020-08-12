@@ -223,6 +223,7 @@ router.post('/updatereservation', async (req, res) => {
     reservation.dateTime = req.body.dateTime;
     reservation.comments = req.body.comments;
     var table = await Table.findById(req.body.tableId);
+    console.log(req.body.tableId);
     if (table === null) return res.json({ errcode: 2, errmsg: 'table not found' })
     reservation.table = table;
     if (!reservation.FoodOrder) {
