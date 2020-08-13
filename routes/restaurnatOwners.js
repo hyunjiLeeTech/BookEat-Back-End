@@ -91,6 +91,8 @@ router.get('/deleteAccount', async (req, res) => {
       }
       u.isActive = false;
       u.token = '';
+      rest.status = 4;
+      await rest.save();
       await u.save()
       return res.json({ errcode: 0, errmsg: 'success' })
     }
