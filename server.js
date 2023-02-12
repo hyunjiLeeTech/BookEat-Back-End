@@ -21,7 +21,7 @@ const port = process.env.PORT || 5000;
 const cache = require('memory-cache') //in-memory cache
 const moment = require('moment')
 const nodemailer = require('nodemailer')
-const frontEndUrl = 'https://bookeatfront.herokuapp.com' 
+const frontEndUrl = 'https://bookeat.onrender.com' 
 const Axios = require('axios')
 var gfs;
 
