@@ -13,27 +13,26 @@ const path = require("path");
 const crypto = require("crypto");
 const multer = require("multer");
 const GridFsStorage = require("multer-gridfs-storage");
-const Grid = require('gridfs-stream');
+const Grid = require("gridfs-stream");
 const methodOverride = require("method-override");
 
 const app = express();
 const port = process.env.PORT || 5000;
-const cache = require('memory-cache') //in-memory cache
-const moment = require('moment')
-const nodemailer = require('nodemailer')
-const frontEndUrl = 'https://bookeat.onrender.com' 
-const Axios = require('axios')
+const cache = require("memory-cache"); //in-memory cache
+const moment = require("moment");
+const nodemailer = require("nodemailer");
+// const frontEndUrl = "http://localhost:3000";
+const frontEndUrl = "https://book-eat.onrender.com";
+const Axios = require("axios");
 var gfs;
 
-
 var transporter = nodemailer.createTransport({
-  service: 'gmail',
+  service: "gmail",
   auth: {
-    user: 'a745874355@gmail.com',
-    pass: 'Aa7758521.'
-  }
+    user: "a745874355@gmail.com",
+    pass: "Aa7758521.",
+  },
 });
-
 
 //database models
 let Customer = require("./models/customer.model");
@@ -43,10 +42,6 @@ let Restaurant = require("./models/restaurnat.model");
 let Address = require("./models/address.model");
 let Manager = require("./models/manager.model");
 let Review = require("./models/review.model");
-
-
-
-
 
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
@@ -59,16 +54,18 @@ app.use(
 );
 app.use(passport.initialize());
 app.use(passport.session());
-app.use(methodOverride('_method'));
+app.use(methodOverride("_method"));
 
 mongoose.set("useUnifiedTopology", true);
 
 const uri = process.env.ATLAS_URI;
-mongoose.connect(uri, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true });
+mongoose.connect(uri, {
+  useNewUrlParser: true,
+  useCreateIndex: true,
+  useUnifiedTopology: true,
+});
 
 const connection = mongoose.connection;
-
-
 
 //create storage engine
 var storage = new GridFsStorage({
@@ -79,16 +76,16 @@ var storage = new GridFsStorage({
         if (err) {
           return rejects(err);
         }
-        const filename = buf.toString('hex') + path.extname(file.originalname);
+        const filename = buf.toString("hex") + path.extname(file.originalname);
         const fileInfo = {
           filename: filename,
-          bucketName: 'uploads'
+          bucketName: "uploads",
         };
         res(fileInfo);
-      })
-    })
-  }
-})
+      });
+    });
+  },
+});
 
 const upload = multer({ storage });
 
@@ -124,7 +121,7 @@ app.use(
 );
 app.use(
   "/restaurant",
-  passport.authenticate("jwt", { session: false }), 
+  passport.authenticate("jwt", { session: false }),
   restaurantRouter
 );
 app.use(
@@ -143,11 +140,7 @@ app.use(
   passport.authenticate("jwt", { session: false }),
   managerRouter
 );
-app.use(
-  "/menu",
-  passport.authenticate("jwt", { session: false }),
-  menuRouter
-);
+app.use("/menu", passport.authenticate("jwt", { session: false }), menuRouter);
 app.use(
   "/discount",
   passport.authenticate("jwt", { session: false }),
@@ -158,21 +151,24 @@ app.use(
   "/review",
   passport.authenticate("jwt", { session: false }),
   reviewRouter
-)
+);
 
-app.post("/addPictures", upload.array('pictures[]', 10), (req, res) => {
+app.post("/addPictures", upload.array("pictures[]", 10), (req, res) => {
   try {
     var pictures = req.files;
     res.json({ errcode: 0, pictures: pictures });
-
   } catch (err) {
     res.json({ ercode: 1, errmsg: err });
   }
-})
+});
 
-app.post("/addMenuImage", upload.single('menuImage'), (req, res) => {
+app.post("/addMenuImage", upload.single("menuImage"), (req, res) => {
   menuImage = req.file;
   res.json({ errcode: 0, menuImage: req.file.filename });
+});
+
+app.get("/", (req, res) => {
+  res.redirect("https://book-eat.onrender.com");
 });
 
 app.get("/getReviewsWithoutSignUp", async (req, res) => {
@@ -182,64 +178,63 @@ app.get("/getReviewsWithoutSignUp", async (req, res) => {
   try {
     var reviews = await Review.find({
       restaurantId: restaurantId,
-      isActive: true
+      isActive: true,
     })
-      .sort({ "updatedAt": -1 })
+      .sort({ updatedAt: -1 })
       .populate("customerId");
     console.log(reviews);
     res.json({ errcode: 0, reviews: reviews });
-
   } catch (err) {
     res.json({ errcode: 1, errmsg: "internal error" });
   }
-})
+});
 
-app.post("/editMenuImage", upload.single('menuImage'), (req, res) => {
+app.post("/editMenuImage", upload.single("menuImage"), (req, res) => {
   menuImage = req.file;
   res.json({ errcode: 0, menuImage: req.file.filename });
-})
+});
 
 app.delete("/deleteImage/:id", (req, res) => {
-  gfs.remove({ filename: req.params.id, root: 'uploads' }, (err, gridStore) => {
+  gfs.remove({ filename: req.params.id, root: "uploads" }, (err, gridStore) => {
     if (err) {
       return res.json({ errcode: 1, errmsg: "Image not found" });
     } else {
       return res.json({ errcode: 0, errmsg: "Image delete success" });
     }
-  })
-})
+  });
+});
 
 app.delete("/deleteImages", (req, res) => {
   var images = req.query.pictures;
   for (var i = 0; i < images.length; i++) {
-    gfs.remove({ filename: images[i], root: 'uploads' }, (err, gridStore) => {
+    gfs.remove({ filename: images[i], root: "uploads" }, (err, gridStore) => {
       if (err) {
         return res.json({ errcode: 1, errmsg: "Image not found" });
       }
-    })
+    });
   }
 
   res.json({ errcode: 0, errmsg: "Images delete success" });
-})
+});
 
 app.get("/getimage/:id", (req, res) => {
   var imageId = req.params.id.trim();
   gfs.files.findOne({ filename: imageId }, (err, file) => {
     if (!file) {
-      file = { isImage: false, file: 'File not found' };
-      return res.json({ errcode: 1, image: file })
+      file = { isImage: false, file: "File not found" };
+      return res.json({ errcode: 1, image: file });
     }
 
-    if (file.contentType === 'image/jpeg' || file.contentType === 'image/png') {
+    if (file.contentType === "image/jpeg" || file.contentType === "image/png") {
       file.isImage = true;
       const readstream = gfs.createReadStream(file.filename);
       readstream.pipe(res);
     } else {
       file.isImage = false;
-      return res.json({ errcode: 1, file: 'Not an image file' });
+      return res.json({ errcode: 1, file: "Not an image file" });
     }
-  })
-})
+  });
+});
 
 app.get(
   "/logout",
@@ -260,62 +255,84 @@ app.get(
   }
 );
 
-
-
-app.post('/loginExternal', async function (req, res) {
+app.post("/loginExternal", async function (req, res) {
   var token = req.body.token;
-  var externalType = req.body.externalType
+  var externalType = req.body.externalType;
   if (Number.parseInt(externalType) === 1) {
     Axios({
-      url: 'https://www.googleapis.com/oauth2/v2/userinfo',
-      method: 'get',
+      url: "https://www.googleapis.com/oauth2/v2/userinfo",
+      method: "get",
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    }).then(async resp => {
-      var external = await ExternalLogin.findOne({ externalId: resp.data.id })
-      if (!external) return res.json({ errcode: 2, profile: resp.data, errmsg: 'sign up needed' })
-      var user = await Account.findById(external.account);
-      user.token = "";
-      const token = jwt.sign(user.toJSON(), secret.secret, {
-        expiresIn: "30 days",
-      });
-      user.token = token;
-      user.save().then((user) => {
-        user.token = '';
-        user.password = '';
-        res.json({ errcode: 0, user: user, jwt: token })
-      })
-    }).catch(err => {
-      console.log(err)
-      return res.json({ errcode: 1, errmsg: 'failed to valided google account' })
     })
+      .then(async (resp) => {
+        var external = await ExternalLogin.findOne({
+          externalId: resp.data.id,
+        });
+        if (!external)
+          return res.json({
+            errcode: 2,
+            profile: resp.data,
+            errmsg: "sign up needed",
+          });
+        var user = await Account.findById(external.account);
+        user.token = "";
+        const token = jwt.sign(user.toJSON(), secret.secret, {
+          expiresIn: "30 days",
+        });
+        user.token = token;
+        user.save().then((user) => {
+          user.token = "";
+          user.password = "";
+          res.json({ errcode: 0, user: user, jwt: token });
+        });
+      })
+      .catch((err) => {
+        console.log(err);
+        return res.json({
+          errcode: 1,
+          errmsg: "failed to valided google account",
+        });
+      });
   } else if (Number.parseInt(externalType) === 2) {
     Axios({
-      url: 'https://graph.facebook.com/me',
-      method: 'get',
+      url: "https://graph.facebook.com/me",
+      method: "get",
       params: {
-        fields: ['id', 'email', 'first_name', 'last_name'].join(','),
+        fields: ["id", "email", "first_name", "last_name"].join(","),
         access_token: token,
       },
-    }).then(async resp => {
-      var external = await ExternalLogin.findOne({ externalId: resp.data.id })
-      if (!external) return res.json({ errcode: 2, profile: resp.data, errmsg: 'sign up needed' })
-      var user = await Account.findById(external.account);
-      user.token = "";
-      const token = jwt.sign(user.toJSON(), secret.secret, {
-        expiresIn: "30 days",
-      });
-      user.token = token;
-      user.save().then((user) => {
-        user.token = '';
-        user.password = '';
-        res.json({ errcode: 0, user: user, jwt: token })
+    })
+      .then(async (resp) => {
+        var external = await ExternalLogin.findOne({
+          externalId: resp.data.id,
+        });
+        if (!external)
+          return res.json({
+            errcode: 2,
+            profile: resp.data,
+            errmsg: "sign up needed",
+          });
+        var user = await Account.findById(external.account);
+        user.token = "";
+        const token = jwt.sign(user.toJSON(), secret.secret, {
+          expiresIn: "30 days",
+        });
+        user.token = token;
+        user.save().then((user) => {
+          user.token = "";
+          user.password = "";
+          res.json({ errcode: 0, user: user, jwt: token });
+        });
       })
-    }).catch(err => {
-      console.log(err)
-      return res.json({ errcode: 1, errmsg: 'failed to valided google account' })
-    });
+      .catch((err) => {
+        console.log(err);
+        return res.json({
+          errcode: 1,
+          errmsg: "failed to valided google account",
+        });
+      });
   }
 
   // Axios({
@@ -326,54 +343,54 @@ app.post('/loginExternal', async function (req, res) {
   //     access_token: accesstoken,
   //   },
   // });
-})
+});
 
 //login
 app.post("/login", function (req, res, next) {
-  passport.authenticate("local", { session: false }, function (
-    err,
-    user,
-    info
-  ) {
-    if (err) {
-      return next(err);
-    }
-    if (!user) {
-      // *** Display message without using flash option
-      // re-render the login form with a message
-      return res.json({ errcode: 1, errmsg: info.message });
-    }
-    req.logIn(user, function (err) {
+  passport.authenticate(
+    "local",
+    { session: false },
+    function (err, user, info) {
       if (err) {
         return next(err);
       }
-      console.log("-------req.user-----------");
-      console.log(user);
-      console.log("-------req.user-----------");
-      user.token = "";
-      const token = jwt.sign(user.toJSON(), secret.secret, {
-        expiresIn: "30 days",
-      });
-      user.token = token;
-      user
-        .save()
-        .then(() => {
-          console.log("User: " + user.email + " access token updated");
-          user.password = "";
-          user.token = "";
-          let returnData = {
-            errcode: 0,
-            user: user,
-            jwt: token,
-          };
-          res.json(returnData);
-        })
-        .catch((err) => {
-          console.log(err);
-          next();
+      if (!user) {
+        // *** Display message without using flash option
+        // re-render the login form with a message
+        return res.json({ errcode: 1, errmsg: info.message });
+      }
+      req.logIn(user, function (err) {
+        if (err) {
+          return next(err);
+        }
+        console.log("-------req.user-----------");
+        console.log(user);
+        console.log("-------req.user-----------");
+        user.token = "";
+        const token = jwt.sign(user.toJSON(), secret.secret, {
+          expiresIn: "30 days",
         });
-    });
-  })(req, res, next);
+        user.token = token;
+        user
+          .save()
+          .then(() => {
+            console.log("User: " + user.email + " access token updated");
+            user.password = "";
+            user.token = "";
+            let returnData = {
+              errcode: 0,
+              user: user,
+              jwt: token,
+            };
+            res.json(returnData);
+          })
+          .catch((err) => {
+            console.log(err);
+            next();
+          });
+      });
+    }
+  )(req, res, next);
 });
 
 // for user signup
@@ -396,14 +413,14 @@ let addCustomerAsync = async function (obj) {
   const phoneNumber = obj.phoneNumber;
   const password = obj.password;
   const userTypeId = obj.userTypeId;
-  const emailVerified = obj.emailVerified ? true : false
+  const emailVerified = obj.emailVerified ? true : false;
 
   const newAccount = new Account({
     email,
     password,
     userTypeId,
     isActive: true,
-    emailVerified: emailVerified
+    emailVerified: emailVerified,
   });
 
   let message = "";
@@ -441,20 +458,22 @@ let addCustomerAsync = async function (obj) {
   return await newCustomer.save();
 };
 
-app.get('/verifyEmail/:id', async (req, res) => {
+app.get("/verifyEmail/:id", async (req, res) => {
   var aid = req.params.id;
-  var acc = await Account.findOne({ _id: aid })
+  var acc = await Account.findOne({ _id: aid });
   if (acc.emailVerified === false) {
     acc.emailVerified = true;
     acc.save().then(() => {
-      res.json({ errcode: 0, errmsg: 'email verified' })
-    })
+      res.json({ errcode: 0, errmsg: "email verified" });
+    });
   } else {
-    res.json({ errcode: 1, errmsg: 'email is already verified' })
+    res.json({ errcode: 1, errmsg: "email is already verified" });
   }
-})
+});
 
-
+app.get("/active", async (req, res) => {
+  res.json({ isActive: true });
+});
 
 /**
  * @param {String} destination email send to
@@ -463,111 +482,149 @@ app.get('/verifyEmail/:id', async (req, res) => {
  */
 async function sendActiveEmail(destination, htmlMessage, callback) {
   var mailOptions = {
-    from: 'a745874355@gmail.com',
+    from: "a745874355@gmail.com",
     to: destination,
-    subject: 'Active your BookEat Account',
-    html: htmlMessage
+    subject: "Active your BookEat Account",
+    html: htmlMessage,
   };
 
   transporter.sendMail(mailOptions, function (error, info) {
-    if (typeof callback === 'function')
-      callback(error, info);
+    if (typeof callback === "function") callback(error, info);
   });
 }
-/** 
-* @param {(error, info) => void} callback call back
-*/
+/**
+ * @param {(error, info) => void} callback call back
+ */
 function sendEmail(options, callback) {
   transporter.sendMail(options, function (error, info) {
-    if (typeof callback === 'function') callback(error, info)
-  })
+    if (typeof callback === "function") callback(error, info);
+  });
 }
 
-app.post('/signupExternal', async function (req, res) {
+app.get("/", function (req, res) {
+  res.json({
+    message: "Welcome to bookeat.",
+    errCode: 0,
+    isActive: true,
+  });
+});
+
+app.post("/signupExternal", async function (req, res) {
   var token = req.body.token;
-  var externalType = req.body.externalType
+  var externalType = req.body.externalType;
   if (Number.parseInt(externalType) === 1) {
     Axios({
-      url: 'https://www.googleapis.com/oauth2/v2/userinfo',
-      method: 'get',
+      url: "https://www.googleapis.com/oauth2/v2/userinfo",
+      method: "get",
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    }).then(async resp => {
-      var external = await ExternalLogin.findOne({ externalId: resp.data.id })
-      var account = await Account.findOne({ email: resp.data.email })
-      if (external) return res.json({ errcode: 2, errmsg: 'This email is already used.' })
-      if (account) return res.json({ errcode: 3, errmsg: 'This email is already used.' })
-      var obj = {
-        firstName: req.body.firstname,
-        lastName: req.body.lastname,
-        email: resp.data.email,
-        phoneNumber: req.body.phonenumber,
-        password: new Date().getTime().toString(),
-        userTypeId: 1,
-        emailVerified: true,
-      };
-      addCustomerAsync(obj).then(async (cus) => {
-        var acc = await Account.findById(cus.account);
-        var e = new ExternalLogin({
-          account: acc,
-          externalId: resp.data.id,
-          externalType: 1,
-        })
-        await e.save();
-        return res.json({ errcode: 0, errmsg: 'success' })
-      }).catch(err => {
-        console.log(err)
-        return res.json({ errcode: 4, errmsg: 'error' })
-      })
-    }).catch(err => {
-      console.log(token)
-      return res.json({ errcode: 1, errmsg: 'failed to valided google account' })
     })
-  }
-  else if (Number.parseInt(externalType) === 2) {
+      .then(async (resp) => {
+        var external = await ExternalLogin.findOne({
+          externalId: resp.data.id,
+        });
+        var account = await Account.findOne({ email: resp.data.email });
+        if (external)
+          return res.json({
+            errcode: 2,
+            errmsg: "This email is already used.",
+          });
+        if (account)
+          return res.json({
+            errcode: 3,
+            errmsg: "This email is already used.",
+          });
+        var obj = {
+          firstName: req.body.firstname,
+          lastName: req.body.lastname,
+          email: resp.data.email,
+          phoneNumber: req.body.phonenumber,
+          password: new Date().getTime().toString(),
+          userTypeId: 1,
+          emailVerified: true,
+        };
+        addCustomerAsync(obj)
+          .then(async (cus) => {
+            var acc = await Account.findById(cus.account);
+            var e = new ExternalLogin({
+              account: acc,
+              externalId: resp.data.id,
+              externalType: 1,
+            });
+            await e.save();
+            return res.json({ errcode: 0, errmsg: "success" });
+          })
+          .catch((err) => {
+            console.log(err);
+            return res.json({ errcode: 4, errmsg: "error" });
+          });
+      })
+      .catch((err) => {
+        console.log(token);
+        return res.json({
+          errcode: 1,
+          errmsg: "failed to valided google account",
+        });
+      });
+  } else if (Number.parseInt(externalType) === 2) {
     Axios({
-      url: 'https://graph.facebook.com/me',
-      method: 'get',
+      url: "https://graph.facebook.com/me",
+      method: "get",
       params: {
-        fields: ['id', 'email', 'first_name', 'last_name'].join(','),
+        fields: ["id", "email", "first_name", "last_name"].join(","),
         access_token: token,
       },
-    }).then(async resp => {
-      var external = await ExternalLogin.findOne({ externalId: resp.data.id })
-      var account = await Account.findOne({ email: resp.data.email })
-      if (external) return res.json({ errcode: 2, errmsg: 'This email is already used.' })
-      if (account) return res.json({ errcode: 3, errmsg: 'This email is already used.' })
-      var obj = {
-        firstName: req.body.firstname,
-        lastName: req.body.lastname,
-        email: resp.data.email,
-        phoneNumber: req.body.phonenumber,
-        password: new Date().getTime().toString(),
-        userTypeId: 1,
-        emailVerified: true,
-      };
-      addCustomerAsync(obj).then(async (cus) => {
-        var acc = await Account.findById(cus.account);
-        var e = new ExternalLogin({
-          account: acc,
+    })
+      .then(async (resp) => {
+        var external = await ExternalLogin.findOne({
           externalId: resp.data.id,
-          externalType: 2,
-        })
-        await e.save();
-        return res.json({ errcode: 0, errmsg: 'success' })
-      }).catch(err => {
-        console.log(err)
-        return res.json({ errcode: 4, errmsg: 'error' })
+        });
+        var account = await Account.findOne({ email: resp.data.email });
+        if (external)
+          return res.json({
+            errcode: 2,
+            errmsg: "This email is already used.",
+          });
+        if (account)
+          return res.json({
+            errcode: 3,
+            errmsg: "This email is already used.",
+          });
+        var obj = {
+          firstName: req.body.firstname,
+          lastName: req.body.lastname,
+          email: resp.data.email,
+          phoneNumber: req.body.phonenumber,
+          password: new Date().getTime().toString(),
+          userTypeId: 1,
+          emailVerified: true,
+        };
+        addCustomerAsync(obj)
+          .then(async (cus) => {
+            var acc = await Account.findById(cus.account);
+            var e = new ExternalLogin({
+              account: acc,
+              externalId: resp.data.id,
+              externalType: 2,
+            });
+            await e.save();
+            return res.json({ errcode: 0, errmsg: "success" });
+          })
+          .catch((err) => {
+            console.log(err);
+            return res.json({ errcode: 4, errmsg: "error" });
+          });
       })
-    }).catch(err => {
-      console.log(err)
-      return res.json({ errcode: 1, errmsg: 'failed to valided facebook account' })
-    });
+      .catch((err) => {
+        console.log(err);
+        return res.json({
+          errcode: 1,
+          errmsg: "failed to valided facebook account",
+        });
+      });
   }
-
-
-})
+});
 
 // post request (/customers/add)
 app.post("/customersignup", (req, res) => {
@@ -587,12 +644,20 @@ app.post("/customersignup", (req, res) => {
   };
   addCustomerAsync(obj)
     .then((acc) => {
-
-      var msg = '<h1>Welcome ' + obj.firstName + ' ' + obj.lastName + '</h1><p>' + frontEndUrl + '/EmailConfirmation/' + acc.account + '</p>'
+      var msg =
+        "<h1>Welcome " +
+        obj.firstName +
+        " " +
+        obj.lastName +
+        "</h1><p>" +
+        frontEndUrl +
+        "/EmailConfirmation/" +
+        acc.account +
+        "</p>";
       sendActiveEmail(obj.email, msg, function (error, info) {
-        if (error) console.log(error)
-        else console.log(info.response)
-      })
+        if (error) console.log(error);
+        else console.log(info.response);
+      });
       res.json({ errcode: 0, errmsg: "success" });
     })
     .catch((err) => {
@@ -622,7 +687,9 @@ let addRestaurantOwnerAsync = async function (obj) {
     /^\(?([0-9]{3})\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$/
   );
 
-  const regExpPostalCode = RegExp(/^(?!.*[DFIOQU])[A-VXY][0-9][A-Z] ?[0-9][A-Z][0-9]$/);
+  const regExpPostalCode = RegExp(
+    /^(?!.*[DFIOQU])[A-VXY][0-9][A-Z] ?[0-9][A-Z][0-9]$/
+  );
 
   const regExpBusinessNum = RegExp(/^[0-9]{9}$/);
 
@@ -725,7 +792,7 @@ let addRestaurantOwnerAsync = async function (obj) {
     restaurantOwnerId: restOwner._id,
     addressId: address._id,
   });
-  await newRestaurant.save()
+  await newRestaurant.save();
   return restOwner;
 };
 
@@ -767,13 +834,18 @@ app.post("/restaurantownersignup", (req, res) => {
   };
   addRestaurantOwnerAsync(obj)
     .then((acc) => {
-      var msg = '<h1>Welcome  </h1><p>' + frontEndUrl + '/EmailConfirmation/' + acc.account + '</p>'
+      var msg =
+        "<h1>Welcome  </h1><p>" +
+        frontEndUrl +
+        "/EmailConfirmation/" +
+        acc.account +
+        "</p>";
       sendActiveEmail(obj.email, msg);
       res.json({ errcode: 0, errmsg: "success" });
     })
     .catch((err) => {
-      console.log('error adding restaurant owner account')
-      console.log(err)
+      console.log("error adding restaurant owner account");
+      console.log(err);
       res.json({ errcode: 1, errmsg: err });
     });
 });
@@ -872,7 +944,12 @@ app.post("/managersignup", (req, res) => {
 
   addManagerAsync(obj)
     .then(() => {
-      var msg = '<h1>Welcome  </h1><p>' + frontEndUrl + '/EmailConfirmation/' + obj.email + '</p>'
+      var msg =
+        "<h1>Welcome  </h1><p>" +
+        frontEndUrl +
+        "/EmailConfirmation/" +
+        obj.email +
+        "</p>";
       sendActiveEmail(obj.email, msg);
       res.json({ errcode: 0, errmsg: "success" });
     })
@@ -909,21 +986,24 @@ app.get(
 app.get("/restaurants/:id", async function (req, res) {
   try {
     var rest = await Restaurant.findOne({ _id: req.params.id })
-      .populate('addressId').populate('categoryId').populate('cuisineStyleId').populate('priceRangeId')
-      .populate('monOpenTimeId')
-      .populate('tueOpenTimeId')
-      .populate('wedOpenTimeId')
-      .populate('thuOpenTimeId')
-      .populate('friOpenTimeId')
-      .populate('satOpenTimeId')
-      .populate('sunOpenTimeId')
-      .populate('monCloseTimeId')
-      .populate('tueCloseTimeId')
-      .populate('wedCloseTimeId')
-      .populate('thuCloseTimeId')
-      .populate('friCloseTimeId')
-      .populate('satCloseTimeId')
-      .populate('sunCloseTimeId')
+      .populate("addressId")
+      .populate("categoryId")
+      .populate("cuisineStyleId")
+      .populate("priceRangeId")
+      .populate("monOpenTimeId")
+      .populate("tueOpenTimeId")
+      .populate("wedOpenTimeId")
+      .populate("thuOpenTimeId")
+      .populate("friOpenTimeId")
+      .populate("satOpenTimeId")
+      .populate("sunOpenTimeId")
+      .populate("monCloseTimeId")
+      .populate("tueCloseTimeId")
+      .populate("wedCloseTimeId")
+      .populate("thuCloseTimeId")
+      .populate("friCloseTimeId")
+      .populate("satCloseTimeId")
+      .populate("sunCloseTimeId");
 
     var discount = await Discount.find({ restaurantId: rest._id });
     res.json({ errcode: 0, restaurant: rest, discount: discount });
@@ -933,15 +1013,14 @@ app.get("/restaurants/:id", async function (req, res) {
   }
 });
 
-app.get('/menus/restaurants/:id', async (req, res) => {
-  var restaurant = await Restaurant.findOne({ _id: req.params.id })
+app.get("/menus/restaurants/:id", async (req, res) => {
+  var restaurant = await Restaurant.findOne({ _id: req.params.id });
   var menus = await Menu.find({
     restaurantId: restaurant._id,
-    isActive: true
+    isActive: true,
   });
   res.json({ errcode: 0, menus: menus });
-})
-
+});
 
 function sleep(ms) {
   return new Promise((resolve) => {
@@ -950,51 +1029,54 @@ function sleep(ms) {
 }
 
 async function loadReservationsToCacheIfNotloadedAsync() {
-  if (cache.get('reservations') !== null) return cache.get('reservations');
-  if (cache.get('loadingReservationsToMemory') !== null) {
-    while (cache.get('loadingReservationsToMemory') !== null) await sleep(100);
-    return (cache.get('reservations'))
-  };
+  if (cache.get("reservations") !== null) return cache.get("reservations");
+  if (cache.get("loadingReservationsToMemory") !== null) {
+    while (cache.get("loadingReservationsToMemory") !== null) await sleep(100);
+    return cache.get("reservations");
+  }
 
-  cache.put('loadingReservationsToMemory', true);
-  console.log("Loading reservations into memory")
+  cache.put("loadingReservationsToMemory", true);
+  console.log("Loading reservations into memory");
   var reservations = await Reservation.find({
-    status: 2, dateTime: { //get reservations in db since now
+    status: 2,
+    dateTime: {
+      //get reservations in db since now
       $gte: moment(new Date()).toDate(),
-    }
+    },
   });
-  var tr = cache.put('reservations', reservations, 86400000, (key, value) => { //Reload reservations every day
+  var tr = cache.put("reservations", reservations, 86400000, (key, value) => {
+    //Reload reservations every day
     //The reservation is already deleted from cache when this callback fired.
-    console.log("Reloading reservations into memory")
+    console.log("Reloading reservations into memory");
     loadReservationsToCacheIfNotloadedAsync();
-  })
-  console.log("Reservations loaded into memory")
-  cache.del('loadingReservationsToMemory');
+  });
+  console.log("Reservations loaded into memory");
+  cache.del("loadingReservationsToMemory");
   return tr;
 }
 
 //May not be used
 async function loadTablesToCacheIfNotloadedAsync() {
-  if (cache.get('tables') !== null) return cache.get('tables');
-  if (cache.get('loadingTablesToMemory') !== null) {
-    while (cache.get('loadingTablesToMemory') !== null) await sleep(100);
-    return cache.get('tables');
-  };
+  if (cache.get("tables") !== null) return cache.get("tables");
+  if (cache.get("loadingTablesToMemory") !== null) {
+    while (cache.get("loadingTablesToMemory") !== null) await sleep(100);
+    return cache.get("tables");
+  }
 
-  cache.put('loadingTablesToMemory', true);
+  cache.put("loadingTablesToMemory", true);
   var tables = await Table.find({
-    status: true
+    status: true,
   });
-  cache.put('tables', tables, 86400000, (key, value) => { //Reload reservations every day
+  cache.put("tables", tables, 86400000, (key, value) => {
+    //Reload reservations every day
     //The reservation is already deleted from cache when this callback fired.
     loadTablesToCacheIfNotloadedAsync();
-  })
-  cache.del('loadingTablesToMemory');
+  });
+  cache.del("loadingTablesToMemory");
 }
 
-
 async function getReservationsByTableIdInMemoryAsync(id) {
-  var reservations = cache.get('reservations');
+  var reservations = cache.get("reservations");
   if (reservations === null) {
     reservations = await loadReservationsToCacheIfNotloadedAsync();
   }
@@ -1009,22 +1091,26 @@ async function getReservationsByTableIdInMemoryAsync(id) {
 
 async function isTableAvailableAtDateTimeInMemory(id, dateTime, eatingTime) {
   if (!eatingTime) eatingTime = 2;
-  var reservations = await getReservationsByTableIdInMemoryAsync(id)
+  var reservations = await getReservationsByTableIdInMemoryAsync(id);
   var conflicts = [];
-  for (var r of reservations) { //checking confliects
+  for (var r of reservations) {
+    //checking confliects
     if (r.dateTime.getTime() == dateTime.getTime()) {
       conflicts.push(r);
-      console.log(dateTime + '\n')
+      console.log(dateTime + "\n");
     }
 
     if (r.dateTime.getTime() < dateTime.getTime()) {
-      var b = moment(r.dateTime).add(eatingTime, 'h').toDate() > dateTime
+      var b = moment(r.dateTime).add(eatingTime, "h").toDate() > dateTime;
       if (b) {
         conflicts.push(b);
       }
     }
     if (r.dateTime.getTime() > dateTime.getTime()) {
-      var b = moment(r.dateTime).add(0 - eatingTime, 'h').toDate() < dateTime
+      var b =
+        moment(r.dateTime)
+          .add(0 - eatingTime, "h")
+          .toDate() < dateTime;
       if (b) {
         conflicts.push(b);
       }
@@ -1033,25 +1119,28 @@ async function isTableAvailableAtDateTimeInMemory(id, dateTime, eatingTime) {
   return conflicts.length === 0;
 }
 
-async function getTablesWithRestaurantsUsingPersionAndDateTimeAsync(persons, dateTime) {
-  var reservations = cache.get('reservations');
+async function getTablesWithRestaurantsUsingPersionAndDateTimeAsync(
+  persons,
+  dateTime
+) {
+  var reservations = cache.get("reservations");
   if (reservations === null) {
     reservations = await loadReservationsToCacheIfNotloadedAsync();
   }
 
   var tables = await Table.find({
     status: true,
-  }).populate('restaurant');
+  }).populate("restaurant");
 
   var promises = [];
 
-
   for (var t of tables) {
     var eatingTime = t.restaurant.eatingTime ? t.restaurant.eatingTime : 2;
-    promises.push(isTableAvailableAtDateTimeInMemory(t._id, dateTime, eatingTime))
+    promises.push(
+      isTableAvailableAtDateTimeInMemory(t._id, dateTime, eatingTime)
+    );
   }
   var tableResults = await Promise.all(promises); //an array of boolean value
-
 
   for (var index in tables) {
     if (persons <= 2 && tables[index].size <= 2) {
@@ -1064,18 +1153,17 @@ async function getTablesWithRestaurantsUsingPersionAndDateTimeAsync(persons, dat
       tableResults[index] = false;
     }
   }
-  console.log(tableResults)
+  console.log(tableResults);
 
   //...
 
   // table results
   var tr = [];
   for (var index in tables) {
-    if (tableResults[index]) tr.push(tables[index])
+    if (tableResults[index]) tr.push(tables[index]);
   }
   return tr;
 }
-
 
 function filterPriceRange(fitlers, set) {
   if (fitlers.length === 0) return set;
@@ -1083,10 +1171,9 @@ function filterPriceRange(fitlers, set) {
   for (var item of set) {
     for (var f of fitlers) {
       if (f.toString() === item.priceRangeId.toString()) {
-        console.log('price range add')
+        console.log("price range add");
         tr.add(item);
       }
-
     }
   }
   return tr;
@@ -1102,14 +1189,11 @@ function filterCuisine(fitlers, set) {
       if (f.toString() === item.cuisineStyleId.toString()) {
         tr.add(item);
       }
-
     }
   }
 
   return tr;
 }
-
-
 
 function filterCategory(fitlers, set) {
   if (fitlers.length === 0) return set;
@@ -1125,48 +1209,54 @@ function filterCategory(fitlers, set) {
 }
 
 function filterRestaurantsByKeyword(keyword, restaurants) {
-  if (!keyword || keyword === '' || keyword === ' ') return restaurants;
+  if (!keyword || keyword === "" || keyword === " ") return restaurants;
   var tr = new Set();
   for (var restaurant of restaurants) {
-    if(!restaurant.restaurantDescription) restaurant.restaurantDescription = '';
-    if (restaurant.resName.toLowerCase().includes(keyword) || (restaurant.restaurantDescription.toLowerCase().includes(keyword))) {
-      tr.add(restaurant)
+    if (!restaurant.restaurantDescription)
+      restaurant.restaurantDescription = "";
+    if (
+      restaurant.resName.toLowerCase().includes(keyword) ||
+      restaurant.restaurantDescription.toLowerCase().includes(keyword)
+    ) {
+      tr.add(restaurant);
     }
   }
   return tr;
 }
 
 function filterRestaurantsByMenusUsingKeyword(keyword, menus) {
-  if (!keyword || keyword === '' || keyword === ' ') return null;
+  if (!keyword || keyword === "" || keyword === " ") return null;
   var tr = new Set();
   for (var menuItem of menus) {
-    if (menuItem.menuName.toLowerCase().includes(keyword) || (menuItem.menuDescript.toLowerCase().includes(keyword))) {
+    if (
+      menuItem.menuName.toLowerCase().includes(keyword) ||
+      menuItem.menuDescript.toLowerCase().includes(keyword)
+    ) {
       tr.add(menuItem.restaurantId);
     }
   }
   return tr;
 }
 
-
-
 function isRestaurantAvailableAtDateTime(restaurant, dateTime) {
-  var times = cache.get('storeTimes');
+  var times = cache.get("storeTimes");
   if (times === null) {
-    console.log('No Times in memory!!')
+    console.log("No Times in memory!!");
     return false;
   }
 
   var weekDay = new Date(dateTime).getDay();
-  var openId = '', closeId = '';
+  var openId = "",
+    closeId = "";
   var getTimeString = function (id) {
-    if (id === '') return null;
+    if (id === "") return null;
     for (var t of times) {
       if (t._id.toString() === id.toString()) {
         return t.storeTimeName;
       }
     }
     return null;
-  }
+  };
   switch (weekDay) {
     case 1:
       if (!restaurant.monIsClose) {
@@ -1211,29 +1301,44 @@ function isRestaurantAvailableAtDateTime(restaurant, dateTime) {
       }
       break;
   }
-  var openTime = getTimeString(openId)
+  var openTime = getTimeString(openId);
   var closeTime = getTimeString(closeId);
   if (openTime === null || closeTime === null) return false;
-  openTime = new Date(moment(new Date(dateTime)).format('YYYY-MM-DD') + ' ' + openTime)
-  closeTime = new Date(moment(new Date(dateTime)).format('YYYY-MM-DD') + ' ' + closeTime)
-  if (new Date(dateTime) > openTime && new Date(dateTime) < closeTime) return true
+  openTime = new Date(
+    moment(new Date(dateTime)).format("YYYY-MM-DD") + " " + openTime
+  );
+  closeTime = new Date(
+    moment(new Date(dateTime)).format("YYYY-MM-DD") + " " + closeTime
+  );
+  if (new Date(dateTime) > openTime && new Date(dateTime) < closeTime)
+    return true;
   else return false;
 }
 
-
-app.post('/search', async (req, res) => {
-  if (new Date() > new Date(req.body.dateTime)) return res.json({ errcode: 0, restaruant: [] })
+app.post("/search", async (req, res) => {
+  if (new Date() > new Date(req.body.dateTime))
+    return res.json({ errcode: 0, restaruant: [] });
   try {
     var keyword = req.body.keyword;
-    if (!keyword || keyword.length < 1 || keyword === 'null' || keyword === 'undefined') keyword = '';
+    if (
+      !keyword ||
+      keyword.length < 1 ||
+      keyword === "null" ||
+      keyword === "undefined"
+    )
+      keyword = "";
     if (keyword) keyword = keyword.toLowerCase();
     console.log(keyword);
-    var availableTables = await getTablesWithRestaurantsUsingPersionAndDateTimeAsync(req.body.numberOfPeople, new Date(req.body.dateTime));
+    var availableTables =
+      await getTablesWithRestaurantsUsingPersionAndDateTimeAsync(
+        req.body.numberOfPeople,
+        new Date(req.body.dateTime)
+      );
     //console.log(availableTables)
     var restaurants = new Set();
 
     for (var t of availableTables) {
-      restaurants.add(t.restaurant)
+      restaurants.add(t.restaurant);
     }
     var priceRanges = req.body.filters.priceRanges;
     var cuisines = req.body.filters.cuisines;
@@ -1242,20 +1347,25 @@ app.post('/search', async (req, res) => {
     tr = filterCuisine(cuisines, tr);
     tr = filterCategory(categories, tr);
 
-
     var menus = await Menu.find({ restaurantId: { $in: Array.from(tr) } });
-    var menusfiltered = filterRestaurantsByMenusUsingKeyword(keyword, menus, tr) //a list of ID
-    if (menusfiltered === null) { // a list of restaurants 
+    var menusfiltered = filterRestaurantsByMenusUsingKeyword(
+      keyword,
+      menus,
+      tr
+    ); //a list of ID
+    if (menusfiltered === null) {
+      // a list of restaurants
       menusfiltered = tr;
-    } else { //a list of ID
+    } else {
+      //a list of ID
       var t = [];
       for (var id of menusfiltered) {
-        tr.forEach(v => {
+        tr.forEach((v) => {
           console.log(v);
           if (id.toString() === v._id.toString()) {
             t.push(v);
           }
-        })
+        });
       }
       menusfiltered = new Set(t);
     }
@@ -1270,20 +1380,16 @@ app.post('/search', async (req, res) => {
 
     tr = new Set([...tr, ...menusfiltered]);
     tr.forEach((v1, v2, set) => {
-      if (!isRestaurantAvailableAtDateTime(v1, req.body.dateTime)) set.delete(v1)
+      if (!isRestaurantAvailableAtDateTime(v1, req.body.dateTime))
+        set.delete(v1);
       if (v1.status !== 1) set.delete(v1);
-    })
-
+    });
 
     res.json({ errcode: 0, restaurants: Array.from(tr) });
   } catch (err) {
     console.log(err);
-    res.json({ errcode: 1, errmsg: err })
+    res.json({ errcode: 1, errmsg: err });
   }
-
-
-
-
 
   // Restaurant.find()
   // .populate('addressId').populate('categoryId').populate('cuisineStyleId').populate('priceRangeId')
@@ -1293,203 +1399,265 @@ app.post('/search', async (req, res) => {
   //   console.log(err);
   //   res.json({errcode: 1, errmsg: err})
   // })
-})
+});
 // router.route('/search').post((req,res)=>{
 //   var numOfPeople = req.body.numOfPeople;
 //   var dateTime = req.body.dateTime;
 
 // })
 
-//test funciton 
+//test funciton
 async function t() {
-  console.log("updating db")
-  var ts = await Table.find()
+  console.log("updating db");
+  var ts = await Table.find();
   var p = [];
   for (var t of ts) {
-    t.isDeleted = false
-    p.push(t.save())
+    t.isDeleted = false;
+    p.push(t.save());
   }
-  Promise.all(p).then(() => {
-    console.log('updated')
-  }).catch(err => console.log(err))
+  Promise.all(p)
+    .then(() => {
+      console.log("updated");
+    })
+    .catch((err) => console.log(err));
 }
 
-app.post('/validateResetPasswrodTimestamp', async (req, res) => {
+app.post("/validateResetPasswrodTimestamp", async (req, res) => {
   var id = req.body.accountId;
   var timestamp = req.body.timestamp;
   await sleep(1000);
-  Account.findById(id).then((acc) => {
-    if (acc.resetTimeStamp !== 0 && acc.resetTimeStamp.toString() === timestamp.toString()) {
-      if (acc.resetTimeStamp === 0) return res.json({ errcode: 3, errmsg: 'This link is not avaiable anymore' })
-      if (new Date.getTime() - acc.resetTimeStamp > 86400000) return res.json({ errcode: 4, errmsg: 'This link has expired' })
-      return res.json({ errcode: 0, errmsg: 'success' })
-    } else {
-      return res.json({ errcode: 2, errmsg: 'incorrect timestamp' })
-    }
-  }).catch(err => {
-    console.log(err)
-    return res.json({ errcode: 1, errmsg: 'something wrong' })
-  })
-})
+  Account.findById(id)
+    .then((acc) => {
+      if (
+        acc.resetTimeStamp !== 0 &&
+        acc.resetTimeStamp.toString() === timestamp.toString()
+      ) {
+        if (acc.resetTimeStamp === 0)
+          return res.json({
+            errcode: 3,
+            errmsg: "This link is not avaiable anymore",
+          });
+        if (new Date.getTime() - acc.resetTimeStamp > 86400000)
+          return res.json({ errcode: 4, errmsg: "This link has expired" });
+        return res.json({ errcode: 0, errmsg: "success" });
+      } else {
+        return res.json({ errcode: 2, errmsg: "incorrect timestamp" });
+      }
+    })
+    .catch((err) => {
+      console.log(err);
+      return res.json({ errcode: 1, errmsg: "something wrong" });
+    });
+});
 
-app.post('/resetPasswordWithTimestamp', async (req, res) => {
+app.post("/resetPasswordWithTimestamp", async (req, res) => {
   var id = req.body.accountId;
   var timestamp = req.body.timestamp;
   var newPassword = req.body.newPassword;
-  await sleep(2000); //avoid hacking, reply the client with a 2s delay 
-  Account.findById(id).then((acc) => {
-    if (acc.resetTimeStamp !== 0 && acc.resetTimeStamp.toString() === timestamp.toString()) {
-      acc.password = newPassword;
-      acc.resetTimeStamp = 0;
-      acc.token = '';
-      acc.save().then(() => {
-        return res.json({ errcode: 0, errmsg: 'success' })
-      }).catch(err => {
-        console.log(err)
-        return res.json({ errcode: 1, errmsg: 'something wrong' })
-      })
-    } else {
-      return res.json({ errcode: 2, errmsg: 'incorrect timestamp' })
-    }
-  }).catch(err => {
-    console.log(err)
-    return res.json({ errcode: 1, errmsg: 'something wrong' })
-  })
-})
+  await sleep(2000); //avoid hacking, reply the client with a 2s delay
+  Account.findById(id)
+    .then((acc) => {
+      if (
+        acc.resetTimeStamp !== 0 &&
+        acc.resetTimeStamp.toString() === timestamp.toString()
+      ) {
+        acc.password = newPassword;
+        acc.resetTimeStamp = 0;
+        acc.token = "";
+        acc
+          .save()
+          .then(() => {
+            return res.json({ errcode: 0, errmsg: "success" });
+          })
+          .catch((err) => {
+            console.log(err);
+            return res.json({ errcode: 1, errmsg: "something wrong" });
+          });
+      } else {
+        return res.json({ errcode: 2, errmsg: "incorrect timestamp" });
+      }
+    })
+    .catch((err) => {
+      console.log(err);
+      return res.json({ errcode: 1, errmsg: "something wrong" });
+    });
+});
 
-
-app.post('/requestResetPasswordEmail', (req, res) => {
+app.post("/requestResetPasswordEmail", (req, res) => {
   var email = req.body.email;
   console.log(email);
   var timestamp = new Date().getTime();
-  Account.findOne({ email: email, isActive: true }).then(acc => {
-    if (acc !== null) {
-      acc.resetTimeStamp = timestamp;
-      acc.save().then(acc => {
-        var htmlMessage = '<h1>Use the link below to reset your password</h1>'
-          + '<p>' + frontEndUrl + '/resetpassword/' + acc._id + '/' + timestamp + '</p>'
-        var mailOptions = {
-          from: 'a745874355@gmail.com',
-          to: acc.email,
-          subject: 'Reset password',
-          html: htmlMessage
-        };
-        sendEmail(mailOptions, (error, info) => {
-          if (error) res.json({ errcode: 4, errmsg: 'failed to send email' })
-          else res.json({ errcode: 0, errmsg: 'email sent' })
-        })
-      }).catch(err => {
-        return res.json({ errcode: 3, errmsg: 'error on setting timestamp' })
-      })
-    } else {
-      return res.json({ errcode: 2, errmsg: 'account not found' })
-    }
-  }).catch((err) => {
-    console.log(err)
-    return res.json({ errcode: 1, errmsg: 'account error' })
-  })
-})
+  Account.findOne({ email: email, isActive: true })
+    .then((acc) => {
+      if (acc !== null) {
+        acc.resetTimeStamp = timestamp;
+        acc
+          .save()
+          .then((acc) => {
+            var htmlMessage =
+              "<h1>Use the link below to reset your password</h1>" +
+              "<p>" +
+              frontEndUrl +
+              "/resetpassword/" +
+              acc._id +
+              "/" +
+              timestamp +
+              "</p>";
+            var mailOptions = {
+              from: "a745874355@gmail.com",
+              to: acc.email,
+              subject: "Reset password",
+              html: htmlMessage,
+            };
+            sendEmail(mailOptions, (error, info) => {
+              if (error)
+                res.json({ errcode: 4, errmsg: "failed to send email" });
+              else res.json({ errcode: 0, errmsg: "email sent" });
+            });
+          })
+          .catch((err) => {
+            return res.json({
+              errcode: 3,
+              errmsg: "error on setting timestamp",
+            });
+          });
+      } else {
+        return res.json({ errcode: 2, errmsg: "account not found" });
+      }
+    })
+    .catch((err) => {
+      console.log(err);
+      return res.json({ errcode: 1, errmsg: "account error" });
+    });
+});
 
 async function getRandomRestaurant(num) {
-  if (!num) num = 5
+  if (!num) num = 5;
   var restaurants = await Restaurant.find({ status: 1 });
   if (!restaurants || restaurants.length === 0) return [];
   var tr = new Set();
   for (var i = 0; i < num; i++) {
-    tr.add(restaurants[Math.floor(Math.random() * restaurants.length)])
+    tr.add(restaurants[Math.floor(Math.random() * restaurants.length)]);
   }
   tr = Array.from(tr);
   return tr;
 }
 
-app.get('/daily', async (req, res) => {
+app.get("/daily", async (req, res) => {
   var restaurants = await getRandomRestaurant();
-  return res.json({ errcode: 0, restaruants: restaurants })
-})
+  return res.json({ errcode: 0, restaruants: restaurants });
+});
 
-app.get('/featured', async (req, res) => {
+app.get("/featured", async (req, res) => {
   var restaurants = await getRandomRestaurant();
-  return res.json({ errcode: 0, restaruants: restaurants })
-})
+  return res.json({ errcode: 0, restaruants: restaurants });
+});
 
-app.get('/favorite', async (req, res) => {
+app.get("/favorite", async (req, res) => {
   var restaurants = await getRandomRestaurant();
-  return res.json({ errcode: 0, restaruants: restaurants })
-})
-
+  return res.json({ errcode: 0, restaruants: restaurants });
+});
 
 async function initRemindEmailTimers() {
-  console.log('Reload Reminds for reservations')
-  var timers = cache.get('emailConfirmationTimers')
+  console.log("Reload Reminds for reservations");
+  var timers = cache.get("emailConfirmationTimers");
   if (timers === null) {
-    timers = cache.put('emailConfirmationTimers', new Set());
+    timers = cache.put("emailConfirmationTimers", new Set());
   }
-  var reservations = await Reservation.find({ status: 2 }).populate('customer').populate("restaurant");
+  var reservations = await Reservation.find({ status: 2 })
+    .populate("customer")
+    .populate("restaurant");
   for (var popedRevs of reservations) {
     var emailaddress;
     try {
       emailaddress = (await Account.findById(popedRevs.customer.account)).email;
     } catch (err) {
-      console.log(err)
+      console.log(err);
       continue;
     }
 
     if (!emailaddress || emailaddress === null) {
-      console.log('email address is null in restaurant reserve')
+      console.log("email address is null in restaurant reserve");
       continue;
     }
-    var htmlMessageConfirm = '<h1>Thans for using BookEat. Your reservation is coming soon</h1>' +
-      '<p>Restaurant name: ' + popedRevs.restaurant.resName + '</p>' +
-      '<p>Restaurant phone number: ' + popedRevs.restaurant.phoneNumber + '</p>' +
-      '<p>Date Time: ' + moment(new Date(popedRevs.dateTime)).format('YYYY-MM-DD HH:mm') + '</p>';
+    var htmlMessageConfirm =
+      "<h1>Thans for using BookEat. Your reservation is coming soon</h1>" +
+      "<p>Restaurant name: " +
+      popedRevs.restaurant.resName +
+      "</p>" +
+      "<p>Restaurant phone number: " +
+      popedRevs.restaurant.phoneNumber +
+      "</p>" +
+      "<p>Date Time: " +
+      moment(new Date(popedRevs.dateTime)).format("YYYY-MM-DD HH:mm") +
+      "</p>";
     var mailOptionsConfirm = {
-      from: 'a745874355@gmail.com',
+      from: "a745874355@gmail.com",
       to: emailaddress,
-      subject: 'Your reservation comes soon',
-      html: htmlMessageConfirm
+      subject: "Your reservation comes soon",
+      html: htmlMessageConfirm,
     };
-    if (moment(new Date(popedRevs.dateTime)).diff(moment(new Date()), 'minutes') <= 30) {
-      console.log('reservation ' + popedRevs._id + ' Reminder Sent')
+    if (
+      moment(new Date(popedRevs.dateTime)).diff(
+        moment(new Date()),
+        "minutes"
+      ) <= 30
+    ) {
+      console.log("reservation " + popedRevs._id + " Reminder Sent");
       transporter.sendMail(mailOptionsConfirm, (error, info) => {
-        if (error) console.log(error)
-      })
-      if (moment(new Date(popedRevs.dateTime)).diff(moment(new Date()), 'minutes') <= 0) {
+        if (error) console.log(error);
+      });
+      if (
+        moment(new Date(popedRevs.dateTime)).diff(
+          moment(new Date()),
+          "minutes"
+        ) <= 0
+      ) {
         popedRevs.status = 0;
         popedRevs.save();
       }
     } else {
-      var timevalue = moment(new Date(popedRevs.dateTime)).diff(moment(new Date()), 'milliseconds') - 1800000;
-      var timers = cache.get('emailConfirmationTimers');
+      var timevalue =
+        moment(new Date(popedRevs.dateTime)).diff(
+          moment(new Date()),
+          "milliseconds"
+        ) - 1800000;
+      var timers = cache.get("emailConfirmationTimers");
       if (timers === null) {
-        timers = cache.put('emailConfirmationTimers', new Set());
+        timers = cache.put("emailConfirmationTimers", new Set());
       }
       var timerObject = {
-        reservationId: popedRevs._id, timer: setTimeout(() => {
-          console.log('Reminder Email sent')
+        reservationId: popedRevs._id,
+        timer: setTimeout(() => {
+          console.log("Reminder Email sent");
           transporter.sendMail(mailOptionsConfirm, (error, info) => {
-            if (error) console.log(error)
+            if (error) console.log(error);
             timers.delete(timerObject);
-          })
-        }, timevalue)
-      }
+          });
+        }, timevalue),
+      };
       timers.add(timerObject);
-      console.log('reservation ' + popedRevs._id + ' Reminder schedule in(ms) ' + timevalue)
+      console.log(
+        "reservation " +
+          popedRevs._id +
+          " Reminder schedule in(ms) " +
+          timevalue
+      );
     }
   }
 }
-
 
 app.listen(port, () => {
   initRemindEmailTimers();
   //t();
   connection.once("open", async () => {
-    cache.put('storeTimes', await StoreTime.find())
+    cache.put("storeTimes", await StoreTime.find());
     //init stream
     gfs = Grid(connection.db, mongoose.mongo);
-    gfs.collection('uploads');
+    gfs.collection("uploads");
     console.log("MongoDB database connection established successfully");
     await loadReservationsToCacheIfNotloadedAsync();
-    console.log(cache.get('reservations'))
+    console.log(cache.get("reservations"));
     console.log(`Server is running on port: ${port}`);
   });
 });
